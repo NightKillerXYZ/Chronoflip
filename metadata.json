@@ -1,0 +1,5 @@
+{
+  "name": "ChronoFlip",
+  "description": "A high-aesthetic, dark-themed flip clock application with integrated timetable management, file upload capabilities, and persistent alarm functionality.",
+  "requestFramePermissions": []
+}
