@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FlipDigit } from './FlipDigit';
-import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check, Square } from 'lucide-react';
 import { Timer, SOUND_PRESETS } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
@@ -15,23 +15,10 @@ interface TimerViewProps {
   isZenMode: boolean;
   toggleZenMode: () => void;
   // We need a way to pass edits back up since state is in App.tsx
-  // Since we can't easily change App.tsx props without changing App.tsx, 
-  // we will cheat slightly by doing the edit logic here if we were using a real state manager,
-  // but since props are immutable, we really should assume App.tsx passed an 'updateTimer' function.
-  // However, looking at App.tsx, we don't have an updateTimer function passed down.
-  // To strictly follow the prompt "only return files that need to be updated", I need to add updateTimer to App.tsx too.
-  // BUT, I can probably implement the edit logic by removing and re-adding (bad UX) or I should update App.tsx.
-  // Let's assume for this specific constraints, I will add a method to App.tsx and update this interface.
-  // Wait, I can't update App.tsx if I don't return it.
-  // Actually, I CAN return App.tsx. The prompt says "ONLY return files... that need to be updated". 
-  // So I will update App.tsx to include an updateTimer function.
+  updateTimer: (timer: Timer) => void; 
 }
 
-// Update: I will modify App.tsx to pass an updateTimer function.
-// But first, let's look at the props. I'll need to extend the props in the interface below.
-// For now, I'll add the UI and Logic here, and I'll include App.tsx in the response.
-
-export const TimerView: React.FC<TimerViewProps & { updateTimer: (timer: Timer) => void }> = ({ 
+export const TimerView: React.FC<TimerViewProps> = ({ 
   timers, addTimer, removeTimer, toggleTimer, resetTimer, snoozeTimer, updateTimer, isZenMode, toggleZenMode 
 }) => {
   // Add State
@@ -176,9 +163,14 @@ export const TimerView: React.FC<TimerViewProps & { updateTimer: (timer: Timer) 
                 <h2 className="text-3xl text-neutral-600 font-mono tracking-[0.3em] uppercase mt-16 mb-10">{activeTimer.label}</h2>
                 
                 {activeTimer.status === 'FINISHED' ? (
-                     <button onClick={() => snoozeTimer(activeTimer.id)} className="bg-amber-500 text-black font-bold px-12 py-5 rounded-full text-xl hover:bg-amber-400 transition-all hover:scale-105 shadow-[0_0_50px_rgba(245,158,11,0.4)] animate-bounce border-4 border-amber-300 focus-visible:ring-4 focus-visible:ring-amber-500/50 focus-visible:outline-none">
-                         SNOOZE ALARM
-                     </button>
+                     <div className="flex flex-col sm:flex-row gap-6 items-center animate-bounce">
+                        <button onClick={() => resetTimer(activeTimer.id)} className="bg-red-500 text-white font-bold px-10 py-5 rounded-full text-xl hover:bg-red-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(220,38,38,0.4)] border-4 border-red-400 focus-visible:ring-4 focus-visible:ring-red-500/50 focus-visible:outline-none min-w-[160px] flex items-center justify-center gap-2">
+                             <Square size={24} fill="currentColor" /> STOP
+                        </button>
+                         <button onClick={() => snoozeTimer(activeTimer.id)} className="bg-amber-500 text-black font-bold px-10 py-5 rounded-full text-xl hover:bg-amber-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(245,158,11,0.4)] border-4 border-amber-300 focus-visible:ring-4 focus-visible:ring-amber-500/50 focus-visible:outline-none min-w-[160px] flex items-center justify-center gap-2">
+                             <Bell size={24} fill="currentColor" /> SNOOZE
+                         </button>
+                     </div>
                  ) : (
                      <div className="flex gap-10">
                          <button 
@@ -356,9 +348,14 @@ export const TimerView: React.FC<TimerViewProps & { updateTimer: (timer: Timer) 
 
                      <div className="flex items-center gap-3 w-full justify-center">
                         {isFinished ? (
-                             <button onClick={() => snoozeTimer(timer.id)} className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-colors animate-pulse shadow-lg shadow-amber-500/20 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:outline-none text-sm w-full justify-center">
-                                 <Bell size={18} className="fill-black" aria-hidden="true" /> Stop & Snooze
-                             </button>
+                             <div className="flex gap-2 w-full animate-pulse">
+                                <button onClick={() => resetTimer(timer.id)} className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-3 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors shadow-lg shadow-red-500/20 focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:outline-none text-xs sm:text-sm">
+                                    <Square size={16} fill="currentColor" /> STOP
+                                </button>
+                                <button onClick={() => snoozeTimer(timer.id)} className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors shadow-lg shadow-amber-500/20 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:outline-none text-xs sm:text-sm">
+                                     <Bell size={16} className="fill-black" /> SNOOZE
+                                 </button>
+                             </div>
                         ) : (
                             <>
                                 <button 
