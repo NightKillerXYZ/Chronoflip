@@ -66,7 +66,8 @@ const App: React.FC = () => {
     
     window.addEventListener('click', handleInteraction);
     window.addEventListener('keydown', handleInteraction);
-    window.addEventListener('touchstart', handleInteraction);
+    // Use passive listener for touch to improve performance and prevent blocking
+    window.addEventListener('touchstart', handleInteraction, { passive: true });
     
     return () => {
         window.removeEventListener('click', handleInteraction);

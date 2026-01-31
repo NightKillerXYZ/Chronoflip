@@ -68,6 +68,17 @@
       button, a, input, [role="button"], .group {
         touch-action: manipulation;
       }
+      
+      /* CRITICAL PWA FIX: Disable tooltips and hover stickiness on touch devices */
+      @media (hover: none) {
+        [role="tooltip"] {
+          display: none !important;
+        }
+        /* Prevent background/color changes from sticking after a tap */
+        .group:hover {
+          background-color: inherit;
+        }
+      }
 
       /* Selection Color */
       ::selection {
