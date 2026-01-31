@@ -38,7 +38,7 @@
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/chronoflip.git
+    git clone https://github.com/NightKillerXYZ/chronoflip.git
     cd chronoflip
     ```
 
