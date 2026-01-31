@@ -1,7 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#0a0a0a"/>
-  <circle cx="256" cy="256" r="180" stroke="#f59e0b" stroke-width="32" fill="none"/>
-  <rect x="240" y="100" width="32" height="156" rx="16" fill="#e5e5e5"/>
-  <rect x="240" y="240" width="140" height="32" rx="16" fill="#e5e5e5" transform="rotate(90 256 256)"/>
-  <circle cx="256" cy="256" r="24" fill="#f59e0b"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="110" fill="#0A0A0A"/>
+  
+  <rect x="80" y="100" width="352" height="312" rx="20" fill="black" fill-opacity="0.5"/>
+  
+  <path d="M90 130C90 118.954 98.954 110 110 110H402C413.046 110 422 118.954 422 130V254H90V130Z" fill="url(#topCardGradient)"/>
+  
+  <path d="M90 258H422V382C422 393.046 413.046 402 402 402H110C98.954 402 90 393.046 90 382V258Z" fill="url(#bottomCardGradient)"/>
+  
+  <rect x="90" y="254" width="332" height="4" fill="#000000"/>
+  
+  <circle cx="95" cy="256" r="8" fill="#333333"/>
+  <circle cx="417" cy="256" r="8" fill="#333333"/>
+  
+  <text x="50%" y="270" dominant-baseline="middle" text-anchor="middle" font-family="Verdana, sans-serif" font-weight="900" font-size="210" fill="#EEEEEE" letter-spacing="-5">12</text>
+
+  <path d="M110 110H402C413.046 110 422 118.954 422 130V180L90 230V130C90 118.954 98.954 110 110 110Z" fill="white" fill-opacity="0.03"/>
+
+  <defs>
+    <linearGradient id="topCardGradient" x1="256" y1="110" x2="256" y2="254" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2C2C2C"/>
+      <stop offset="1" stop-color="#1A1A1A"/>
+    </linearGradient>
+    <linearGradient id="bottomCardGradient" x1="256" y1="258" x2="256" y2="402" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#161616"/>
+      <stop offset="1" stop-color="#222222"/>
+    </linearGradient>
+  </defs>
 </svg>
