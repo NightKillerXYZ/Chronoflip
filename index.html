@@ -17,6 +17,10 @@
     <script>
       tailwind.config = {
         darkMode: 'class',
+        future: {
+          // Critical fix for iPad/iOS: prevents hover styles from requiring a double-tap to click
+          hoverOnlyWhenSupported: true,
+        },
         theme: {
           extend: {
             colors: {
@@ -56,8 +60,15 @@
         overflow: hidden;
         /* Prevent pull-to-refresh on mobile */
         overscroll-behavior: none;
+        /* Remove default grey tap highlight on mobile */
+        -webkit-tap-highlight-color: transparent;
       }
       
+      /* Fix for iOS tap delay/double-tap zoom on interactive elements */
+      button, a, input, [role="button"], .group {
+        touch-action: manipulation;
+      }
+
       /* Selection Color */
       ::selection {
         background-color: rgba(245, 158, 11, 0.3); /* amber-500/30 */
