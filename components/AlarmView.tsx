@@ -89,7 +89,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
   }, []);
 
   return (
-    <div className="h-full w-full overflow-y-auto custom-scrollbar p-6 md:p-10 animate-fade-in relative">
+    <div className="h-full w-full overflow-y-auto custom-scrollbar p-4 sm:p-6 md:p-10 animate-fade-in relative">
       
       {/* Edit Modal */}
       {isEditModalOpen && (
@@ -103,9 +103,9 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                 </div>
                 
                 <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                     <div className="flex gap-4 items-center justify-center bg-neutral-50 dark:bg-neutral-950/50 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+                     <div className="flex gap-2 sm:gap-4 items-center justify-center bg-neutral-50 dark:bg-neutral-950/50 p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
                         <WheelPicker label="HOURS" value={editHrs} onChange={setEditHrs} min={0} max={23} />
-                        <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-8 opacity-50" aria-hidden="true">:</div>
+                        <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 sm:pb-8 opacity-50" aria-hidden="true">:</div>
                         <WheelPicker label="MINUTES" value={editMins} onChange={setEditMins} min={0} max={59} />
                     </div>
 
@@ -116,7 +116,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                                 type="text" 
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
-                                className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
+                                className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 sm:p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
                             />
                         </div>
                         <div className="space-y-2">
@@ -129,7 +129,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                 <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/30">
                      <button 
                         onClick={saveEdit}
-                        className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98]"
+                        className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3.5 sm:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98]"
                     >
                         <Check size={20} strokeWidth={3} /> SAVE CHANGES
                     </button>
@@ -139,19 +139,19 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
       )}
 
       <div className="max-w-5xl mx-auto flex flex-col">
-        <h2 className="text-4xl font-bold text-neutral-800 dark:text-white mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-6 tracking-tight">Alarms</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-neutral-800 dark:text-white mb-6 sm:mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-4 sm:pb-6 tracking-tight">Alarms</h2>
 
         {/* Add Alarm Section */}
-        <div className="bg-white dark:bg-neutral-900/40 p-5 md:p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 mb-10 flex flex-col lg:flex-row gap-8 lg:gap-10 items-start lg:items-center justify-between shadow-sm">
-            <div className="flex gap-6 items-center mx-auto lg:mx-0">
+        <div className="bg-white dark:bg-neutral-900/40 p-4 sm:p-5 md:p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 mb-8 sm:mb-10 flex flex-col lg:flex-row gap-6 sm:gap-8 lg:gap-10 items-start lg:items-center justify-between shadow-sm">
+            <div className="flex gap-2 sm:gap-6 items-center mx-auto lg:mx-0">
                 <WheelPicker label="HOURS" value={inputHrs} onChange={setInputHrs} min={0} max={23} />
-                <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-8 opacity-50" aria-hidden="true">:</div>
+                <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 sm:pb-8 opacity-50" aria-hidden="true">:</div>
                 <WheelPicker label="MINUTES" value={inputMins} onChange={setInputMins} min={0} max={59} />
             </div>
             
-            <div className="flex flex-col gap-5 w-full flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
+            <div className="flex flex-col gap-3 sm:gap-5 w-full flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5">
+                <div className="space-y-1 sm:space-y-2">
                     <label htmlFor="alarm-label" className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Label</label>
                     <input 
                         id="alarm-label"
@@ -159,10 +159,10 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                         value={newLabel}
                         onChange={(e) => setNewLabel(e.target.value)}
                         placeholder="Morning Wakeup"
-                        className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
+                        className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 sm:p-3.5 text-neutral-900 dark:text-white placeholder-neutral-400 dark:placeholder-neutral-600 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium text-sm sm:text-base"
                     />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1 sm:space-y-2">
                     <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Ringtone</label>
                     <SoundPicker selectedSoundId={selectedSound} onSelect={setSelectedSound} />
                 </div>
@@ -170,7 +170,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
             
             <button 
                 onClick={addAlarm}
-                className="w-full bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold p-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg mt-2 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                className="w-full bg-neutral-900 dark:bg-white hover:bg-neutral-800 dark:hover:bg-neutral-200 text-white dark:text-black font-bold py-3 sm:p-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg mt-1 sm:mt-2 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
             >
                 <Plus size={20} strokeWidth={3} aria-hidden="true" /> <span className="tracking-wide">ADD ALARM</span>
             </button>
@@ -186,48 +186,48 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
             </div>
             )}
             {alarms.map(alarm => (
-            <div key={alarm.id} role="listitem" className="bg-white dark:bg-neutral-900/60 p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex items-center justify-between group hover:border-amber-500/30 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md hover:bg-neutral-50 dark:hover:bg-neutral-900">
-                <div className="flex items-center gap-6">
+            <div key={alarm.id} role="listitem" className="bg-white dark:bg-neutral-900/60 p-4 sm:p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex items-center justify-between group hover:border-amber-500/30 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                <div className="flex items-center gap-4 sm:gap-6">
                 <button 
                     onClick={() => toggleAlarm(alarm.id)}
                     aria-label={alarm.active ? "Turn off alarm" : "Turn on alarm"}
-                    className={`p-3.5 rounded-full transition-all duration-300 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${alarm.active ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600'}`}
+                    className={`p-3 sm:p-3.5 rounded-full transition-all duration-300 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${alarm.active ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600'}`}
                 >
-                    {alarm.active ? <Bell size={24} className="fill-current" aria-hidden="true" /> : <BellOff size={24} aria-hidden="true" />}
+                    {alarm.active ? <Bell size={20} className="fill-current sm:w-6 sm:h-6" aria-hidden="true" /> : <BellOff size={20} className="sm:w-6 sm:h-6" aria-hidden="true" />}
                 </button>
                 <div>
-                    <div className={`text-4xl font-mono font-bold tracking-tight ${alarm.active ? 'text-neutral-900 dark:text-white' : 'text-neutral-400 dark:text-neutral-600'}`}>
+                    <div className={`text-3xl sm:text-4xl font-mono font-bold tracking-tight ${alarm.active ? 'text-neutral-900 dark:text-white' : 'text-neutral-400 dark:text-neutral-600'}`}>
                     {alarm.time}
                     </div>
-                    <div className="flex gap-3 items-center mt-1">
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-3 items-start sm:items-center mt-1">
                         <span className="text-neutral-600 dark:text-neutral-400 font-medium text-sm">{alarm.label}</span>
-                        <span className="h-1 w-1 rounded-full bg-neutral-300 dark:bg-neutral-700" aria-hidden="true"></span>
-                        <span className="text-neutral-400 dark:text-neutral-500 text-xs font-mono uppercase tracking-wide">
+                        <span className="hidden sm:inline h-1 w-1 rounded-full bg-neutral-300 dark:bg-neutral-700" aria-hidden="true"></span>
+                        <span className="text-neutral-400 dark:text-neutral-500 text-[10px] sm:text-xs font-mono uppercase tracking-wide">
                             {SOUND_PRESETS.find(s => s.id === alarm.soundId)?.name || 'Default'}
                         </span>
                     </div>
                 </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                     <button
                         onClick={() => openEditModal(alarm)}
                         aria-label="Edit alarm"
-                        className="p-3 rounded-xl text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                        className="p-2 sm:p-3 rounded-xl text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                     >
-                        <Pencil size={20} aria-hidden="true" />
+                        <Pencil size={18} className="sm:w-5 sm:h-5" aria-hidden="true" />
                     </button>
                     
                     <button 
                     onClick={() => handleDeleteClick(alarm.id)}
                     aria-label={deleteConfirmId === alarm.id ? "Confirm deletion" : "Delete alarm"}
-                    className={`transition-all p-3 rounded-xl flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none ${
+                    className={`transition-all p-2 sm:p-3 rounded-xl flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none ${
                         deleteConfirmId === alarm.id 
-                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 px-4' 
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 px-3 sm:px-4' 
                         : 'text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10'
                     }`}
                     >
-                    {deleteConfirmId === alarm.id ? <span className="font-bold text-xs">CONFIRM</span> : <Trash2 size={20} aria-hidden="true" />}
+                    {deleteConfirmId === alarm.id ? <span className="font-bold text-xs">CONFIRM</span> : <Trash2 size={18} className="sm:w-5 sm:h-5" aria-hidden="true" />}
                     </button>
                 </div>
             </div>

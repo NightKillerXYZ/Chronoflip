@@ -210,7 +210,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
 
   // --- STANDARD VIEW ---
   return (
-    <div className="h-full flex flex-col p-6 md:p-8 w-full overflow-y-auto custom-scrollbar animate-fade-in relative">
+    <div className="h-full flex flex-col p-4 sm:p-6 md:p-8 w-full overflow-y-auto custom-scrollbar animate-fade-in relative">
       
       {/* Edit Modal */}
       {isEditModalOpen && (
@@ -224,11 +224,11 @@ export const TimerView: React.FC<TimerViewProps> = ({
                 </div>
 
                 <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                    <div className="flex gap-4 items-center justify-center bg-neutral-50 dark:bg-neutral-950/50 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+                    <div className="flex gap-1 sm:gap-4 items-center justify-center bg-neutral-50 dark:bg-neutral-950/50 p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
                         <WheelPicker label="HOURS" value={editHrs} onChange={setEditHrs} min={0} max={23} />
-                        <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-8 opacity-50" aria-hidden="true">:</div>
+                        <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 sm:pb-8 opacity-50" aria-hidden="true">:</div>
                         <WheelPicker label="MINUTES" value={editMins} onChange={setEditMins} min={0} max={59} />
-                        <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-8 opacity-50" aria-hidden="true">:</div>
+                        <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 sm:pb-8 opacity-50" aria-hidden="true">:</div>
                         <WheelPicker label="SECONDS" value={editSecs} onChange={setEditSecs} min={0} max={59} />
                     </div>
                     
@@ -239,7 +239,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
                                 type="text" 
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
-                                className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
+                                className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 sm:p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
                             />
                         </div>
                         <div className="space-y-2">
@@ -252,7 +252,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
                 <div className="p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950/30">
                      <button 
                         onClick={saveEdit}
-                        className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98]"
+                        className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-3.5 sm:py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98]"
                     >
                         <Check size={20} strokeWidth={3} /> SAVE CHANGES
                     </button>
@@ -266,16 +266,16 @@ export const TimerView: React.FC<TimerViewProps> = ({
             <h2 className="text-3xl font-bold text-neutral-800 dark:text-white tracking-tight">Timers</h2>
          </div>
          
-         <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm flex flex-col xl:flex-row items-center gap-8 justify-between">
-            <div className="flex gap-4 items-center">
+         <div className="bg-white dark:bg-neutral-900 p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm flex flex-col xl:flex-row items-center gap-6 sm:gap-8 justify-between">
+            <div className="flex gap-1 sm:gap-4 items-center">
                 <WheelPicker label="HOURS" value={inputHrs} onChange={setInputHrs} min={0} max={23} />
-                <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6" aria-hidden="true">:</div>
+                <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-5 sm:pb-6" aria-hidden="true">:</div>
                 <WheelPicker label="MINUTES" value={inputMins} onChange={setInputMins} min={0} max={59} />
-                <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6" aria-hidden="true">:</div>
+                <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-5 sm:pb-6" aria-hidden="true">:</div>
                 <WheelPicker label="SECONDS" value={inputSecs} onChange={setInputSecs} min={0} max={59} />
             </div>
 
-            <div className="flex flex-col gap-4 w-full xl:w-96">
+            <div className="flex flex-col gap-3 sm:gap-4 w-full xl:w-96">
                 <div className="space-y-1.5">
                     <label htmlFor="timer-label" className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider pl-1">Label</label>
                     <input 
@@ -298,7 +298,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
 
                 <button 
                     onClick={handleAdd}
-                    className="bg-neutral-900 dark:bg-white text-white dark:text-black font-bold py-3.5 rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 mt-1 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+                    className="bg-neutral-900 dark:bg-white text-white dark:text-black font-bold py-3 sm:py-3.5 rounded-xl hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:-translate-y-0.5 mt-1 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
                 >
                     <Plus size={18} strokeWidth={3} aria-hidden="true" /> <span className="text-sm tracking-wide">START TIMER</span>
                 </button>

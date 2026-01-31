@@ -93,11 +93,11 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({ selectedSoundId, onSel
       <button 
         onClick={() => setIsOpen(true)}
         aria-label="Select Ringtone"
-        className="flex items-center justify-between w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-700 rounded-lg p-3 text-neutral-900 dark:text-white hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors group focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
+        className="flex items-center justify-between w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2.5 sm:p-3 text-neutral-900 dark:text-white hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors group focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
       >
         <div className="flex items-center gap-2 overflow-hidden">
             <Volume2 size={20} className="text-neutral-500 group-hover:text-amber-500 transition-colors" aria-hidden="true" />
-            <span className="truncate">
+            <span className="truncate text-sm sm:text-base">
                 {[...SOUND_PRESETS, ...customSounds].find(s => s.id === selectedSoundId)?.name || 'Select Sound'}
             </span>
         </div>

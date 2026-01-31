@@ -89,7 +89,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
   const nextVal = value === max ? min : value + 1;
 
   return (
-    <div className="flex flex-col items-center mx-1 sm:mx-2 select-none group">
+    <div className="flex flex-col items-center mx-0.5 sm:mx-2 select-none group">
       <div 
         ref={containerRef}
         tabIndex={0}
@@ -106,30 +106,30 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
         onTouchEnd={handleTouchEnd}
         // Critical for allowing custom touch logic without browser interference
         style={{ touchAction: 'none' }} 
-        className="relative h-32 w-20 bg-white dark:bg-neutral-900 rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/50 outline-none cursor-ns-resize shadow-inner transition-all hover:border-neutral-300 dark:hover:border-neutral-700 active:cursor-grabbing"
+        className="relative h-24 w-16 sm:h-32 sm:w-20 bg-white dark:bg-neutral-900 rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/50 outline-none cursor-ns-resize shadow-inner transition-all hover:border-neutral-300 dark:hover:border-neutral-700 active:cursor-grabbing"
       >
         {/* Gradient Overlay - Adaptive for Light/Dark */}
         <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white dark:from-neutral-950 dark:via-transparent dark:to-neutral-950 z-10 pointer-events-none" />
         
         {/* Active Highlight Band */}
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 border-y border-amber-500/30 bg-amber-500/10 z-0 backdrop-blur-[1px]" />
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-8 sm:h-10 border-y border-amber-500/30 bg-amber-500/10 z-0 backdrop-blur-[1px]" />
 
         <div className="flex flex-col items-center justify-center h-full space-y-0.5 pointer-events-none">
             {/* Previous */}
-            <div className="h-8 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-xl font-mono font-medium opacity-50 blur-[1px] transform scale-75">
+            <div className="h-6 sm:h-8 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm sm:text-xl font-mono font-medium opacity-50 blur-[1px] transform scale-75">
                 {fmt(prevVal)}
             </div>
             {/* Current */}
-            <div className="h-10 flex items-center justify-center text-neutral-900 dark:text-white text-3xl font-mono font-bold z-20 transform scale-100 drop-shadow-sm">
+            <div className="h-8 sm:h-10 flex items-center justify-center text-neutral-900 dark:text-white text-2xl sm:text-3xl font-mono font-bold z-20 transform scale-100 drop-shadow-sm">
                 {fmt(value)}
             </div>
             {/* Next */}
-            <div className="h-8 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-xl font-mono font-medium opacity-50 blur-[1px] transform scale-75">
+            <div className="h-6 sm:h-8 flex items-center justify-center text-neutral-400 dark:text-neutral-600 text-sm sm:text-xl font-mono font-medium opacity-50 blur-[1px] transform scale-75">
                 {fmt(nextVal)}
             </div>
         </div>
       </div>
-      <span className="text-[9px] font-bold text-neutral-500 mt-2 tracking-[0.2em] uppercase group-hover:text-amber-500 transition-colors" id={`label-${label.replace(/\s+/g, '-').toLowerCase()}`}>{label}</span>
+      <span className="text-[8px] sm:text-[9px] font-bold text-neutral-500 mt-2 tracking-[0.2em] uppercase group-hover:text-amber-500 transition-colors" id={`label-${label.replace(/\s+/g, '-').toLowerCase()}`}>{label}</span>
     </div>
   );
 };
