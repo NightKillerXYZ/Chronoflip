@@ -6,11 +6,22 @@ class AudioService {
   private customSounds: Map<string, AudioBuffer> = new Map();
 
   private init() {
-    if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) {
+        console.warn("AudioContext not supported in this environment");
+        return;
     }
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+
+    if (!this.audioContext) {
+      try {
+          this.audioContext = new AudioContextClass();
+      } catch (e) {
+          console.error("Failed to create AudioContext", e);
+      }
+    }
+    
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(e => console.warn("Audio resume failed", e));
     }
   }
 
@@ -24,9 +35,13 @@ class AudioService {
     this.init();
     if (!this.audioContext) return;
     
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-    this.customSounds.set(id, audioBuffer);
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+        this.customSounds.set(id, audioBuffer);
+    } catch (e) {
+        console.error("Failed to decode custom sound", e);
+    }
   }
 
   public getCustomSoundIds(): string[] {
@@ -41,22 +56,26 @@ class AudioService {
     if (!this.audioContext) this.init();
     if (!this.audioContext) return;
 
-    // Create a short, high-pitched blip
-    const osc = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
+    try {
+        // Create a short, high-pitched blip
+        const osc = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, this.audioContext.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.05);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.05);
 
-    gain.gain.setValueAtTime(0.05, this.audioContext.currentTime); // Very quiet
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.05, this.audioContext.currentTime); // Very quiet
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.05);
 
-    osc.connect(gain);
-    gain.connect(this.audioContext.destination);
+        osc.connect(gain);
+        gain.connect(this.audioContext.destination);
 
-    osc.start();
-    osc.stop(this.audioContext.currentTime + 0.05);
+        osc.start();
+        osc.stop(this.audioContext.currentTime + 0.05);
+    } catch (e) {
+        // Ignore audio errors
+    }
   }
 
   /**
@@ -73,17 +92,21 @@ class AudioService {
 
     const now = this.audioContext.currentTime;
 
-    // Check for custom sound first
-    if (this.customSounds.has(soundId)) {
-      this.playCustomBuffer(this.customSounds.get(soundId)!, now, duration);
-    } else {
-      this.playSynthPreset(soundId, now, duration);
-    }
+    try {
+        // Check for custom sound first
+        if (this.customSounds.has(soundId)) {
+          this.playCustomBuffer(this.customSounds.get(soundId)!, now, duration);
+        } else {
+          this.playSynthPreset(soundId, now, duration);
+        }
 
-    // Auto stop after duration
-    this.stopTimeout = setTimeout(() => {
-      this.stopAlarm();
-    }, duration * 1000);
+        // Auto stop after duration
+        this.stopTimeout = setTimeout(() => {
+          this.stopAlarm();
+        }, duration * 1000);
+    } catch (e) {
+        console.error("Error playing alarm", e);
+    }
   }
 
   public previewSound(soundId: string) {
@@ -100,6 +123,7 @@ class AudioService {
   // --- Internal Logic ---
 
   private stopNodes() {
+    if (!this.audioContext) return;
     this.activeNodes.forEach(node => {
         try {
             if (node instanceof OscillatorNode || node instanceof AudioBufferSourceNode) {
@@ -107,8 +131,10 @@ class AudioService {
                 node.disconnect();
             } else if (node instanceof GainNode) {
                 // Ramp down to avoid clicks
-                node.gain.setTargetAtTime(0, this.audioContext!.currentTime, 0.05);
-                setTimeout(() => node.disconnect(), 100);
+                if (this.audioContext) {
+                    node.gain.setTargetAtTime(0, this.audioContext.currentTime, 0.05);
+                    setTimeout(() => node.disconnect(), 100);
+                }
             }
         } catch (e) { /* ignore */ }
     });

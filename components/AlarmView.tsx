@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Bell, BellOff, Volume2, AlertCircle, Pencil, X, Check } from 'lucide-react';
-import { Alarm, SOUND_PRESETS } from '../types';
-import { audioService } from '../services/audioService';
+import { Plus, Trash2, Bell, BellOff, Pencil, X, Check } from 'lucide-react';
+import { Alarm } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { SOUND_PRESETS } from '../types';
 
-export const AlarmView: React.FC = () => {
-  const [alarms, setAlarms] = useLocalStorage<Alarm[]>('alarms', []);
-  
+interface AlarmViewProps {
+    alarms: Alarm[];
+    setAlarms: (alarms: Alarm[]) => void;
+}
+
+export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
   // "Add New" State
   const [inputHrs, setInputHrs] = useState(8);
   const [inputMins, setInputMins] = useState(0);
@@ -23,77 +25,7 @@ export const AlarmView: React.FC = () => {
   const [editLabel, setEditLabel] = useState('');
   const [editSound, setEditSound] = useState('');
 
-  const [activeAlarmId, setActiveAlarmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      const currentHours = now.getHours();
-      const currentMins = now.getMinutes();
-      const currentTimestamp = Math.floor(now.getTime() / 60000); // Minutes since epoch
-      
-      let hasUpdates = false;
-
-      const updatedAlarms = alarms.map(alarm => {
-        const [h, m] = alarm.time.split(':').map(Number);
-        
-        // Check if triggers: Active AND matches time AND hasn't triggered this minute already
-        if (alarm.active && h === currentHours && m === currentMins) {
-           // If we already triggered this alarm within this minute, skip
-           if (alarm.lastTriggered === currentTimestamp) {
-               return alarm;
-           }
-           
-           triggerAlarm(alarm);
-           hasUpdates = true;
-           return { ...alarm, lastTriggered: currentTimestamp };
-        }
-        return alarm;
-      });
-
-      if (hasUpdates) {
-          setAlarms(updatedAlarms);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [alarms, setAlarms]);
-
-  const triggerAlarm = (alarm: Alarm) => {
-    if (activeAlarmId === alarm.id) return;
-    setActiveAlarmId(alarm.id);
-    audioService.playAlarm(alarm.soundId);
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 500]);
-    if (Notification.permission === 'granted') {
-      new Notification("ChronoFlip Alarm", { body: `Wake up! ${alarm.label}` });
-    }
-  };
-
-  const stopAlarm = () => {
-    setActiveAlarmId(null);
-    audioService.stopAlarm();
-  };
-
-  const snoozeAlarm = (id: string) => {
-    const alarm = alarms.find(a => a.id === id);
-    if (!alarm) { stopAlarm(); return; }
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 5);
-    const newH = now.getHours().toString().padStart(2, '0');
-    const newM = now.getMinutes().toString().padStart(2, '0');
-    const newTime = `${newH}:${newM}`;
-    
-    const snoozeId = `snooze-${Date.now()}`;
-    setAlarms([...alarms, {
-        id: snoozeId,
-        time: newTime,
-        label: `Snooze: ${alarm.label}`,
-        active: true,
-        soundId: alarm.soundId
-    }]);
-    stopAlarm();
-    if (navigator.vibrate) navigator.vibrate(50);
-  };
 
   const addAlarm = () => {
     const id = Date.now().toString();
@@ -157,7 +89,6 @@ export const AlarmView: React.FC = () => {
   }, []);
 
   return (
-    // Changed main container to scrollable for better mobile handling
     <div className="h-full w-full overflow-y-auto custom-scrollbar p-6 md:p-10 animate-fade-in relative">
       
       {/* Edit Modal */}
@@ -210,34 +141,6 @@ export const AlarmView: React.FC = () => {
       <div className="max-w-5xl mx-auto flex flex-col">
         <h2 className="text-4xl font-bold text-neutral-800 dark:text-white mb-8 border-b border-neutral-200 dark:border-neutral-800 pb-6 tracking-tight">Alarms</h2>
 
-        {activeAlarmId && (
-            <div role="alertdialog" aria-modal="true" aria-labelledby="alarm-title" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-6 animate-in fade-in zoom-in duration-300">
-            <div className="bg-neutral-900 border border-red-500/30 p-10 rounded-3xl shadow-[0_0_50px_rgba(220,38,38,0.2)] flex flex-col items-center w-full max-w-md relative overflow-hidden">
-                {/* Glowing Background */}
-                <div className="absolute inset-0 bg-red-500/5 animate-pulse" />
-                
-                <Bell className="w-20 h-20 text-red-500 mb-6 animate-bounce relative z-10" aria-hidden="true" />
-                <h1 id="alarm-title" className="text-4xl text-white font-bold mb-2 text-center relative z-10 tracking-tight">ALARM RINGING</h1>
-                <p className="text-neutral-400 mb-10 text-xl relative z-10">{alarms.find(a => a.id === activeAlarmId)?.label}</p>
-                
-                <div className="flex flex-col gap-4 w-full relative z-10">
-                    <button 
-                    onClick={stopAlarm}
-                    className="bg-red-600 hover:bg-red-500 text-white w-full py-4 rounded-xl text-lg font-bold transition-all shadow-lg shadow-red-900/30 hover:scale-[1.02] active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                    >
-                    STOP ALARM
-                    </button>
-                    <button 
-                    onClick={() => snoozeAlarm(activeAlarmId)}
-                    className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 w-full py-4 rounded-xl text-lg font-semibold transition-all border border-neutral-700 hover:border-neutral-600 hover:scale-[1.02] active:scale-95 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
-                    >
-                    Snooze 5m
-                    </button>
-                </div>
-            </div>
-            </div>
-        )}
-
         {/* Add Alarm Section */}
         <div className="bg-white dark:bg-neutral-900/40 p-5 md:p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 mb-10 flex flex-col lg:flex-row gap-8 lg:gap-10 items-start lg:items-center justify-between shadow-sm">
             <div className="flex gap-6 items-center mx-auto lg:mx-0">
@@ -274,7 +177,7 @@ export const AlarmView: React.FC = () => {
             </div>
         </div>
 
-        {/* List Section - Now simply flows in the document to allow page scrolling */}
+        {/* List Section */}
         <div className="space-y-4 pb-20" role="list">
             {alarms.length === 0 && (
             <div className="flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 italic border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">

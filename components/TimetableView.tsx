@@ -1,22 +1,27 @@
 import React, { useState } from 'react';
 import { TimetableEntry, Alarm, SOUND_PRESETS } from '../types';
-import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check } from 'lucide-react';
+import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
 import mammoth from 'mammoth';
 
-export const TimetableView: React.FC = () => {
+interface TimetableViewProps {
+    alarms: Alarm[];
+    setAlarms: (alarms: Alarm[]) => void;
+}
+
+export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms }) => {
   const [entries, setEntries] = useLocalStorage<TimetableEntry[]>('timetable', [
     { id: '1', time: '09:00', activity: 'Morning Standup', notes: 'Discuss Q3 Goals' },
     { id: '2', time: '11:30', activity: 'Deep Work Session', notes: 'Focus on API Integration' },
     { id: '3', time: '14:00', activity: 'Client Call', notes: 'Prepare slide deck' },
   ]);
-  const [alarms, setAlarms] = useLocalStorage<Alarm[]>('alarms', []);
   
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Alarm Modal State
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
+  const [isBulkAlarmMode, setIsBulkAlarmMode] = useState(false);
   const [selectedEntryForAlarm, setSelectedEntryForAlarm] = useState<TimetableEntry | null>(null);
   const [selectedAlarmSound, setSelectedAlarmSound] = useState(SOUND_PRESETS[0].id);
 
@@ -39,27 +44,49 @@ export const TimetableView: React.FC = () => {
     }
   };
 
-  // --- Alarm Modal Logic ---
+  // --- Alarm Logic ---
   const openAlarmModal = (entry: TimetableEntry) => {
       setSelectedEntryForAlarm(entry);
+      setIsBulkAlarmMode(false);
+      setIsAlarmModalOpen(true);
+  };
+
+  const openBulkAlarmModal = () => {
+      if (entries.length === 0) return;
+      setSelectedEntryForAlarm(null);
+      setIsBulkAlarmMode(true);
       setIsAlarmModalOpen(true);
   };
 
   const handleConfirmAlarm = () => {
-      if (!selectedEntryForAlarm) return;
-      
-      const newAlarm: Alarm = {
-          id: `tt-${Date.now()}`,
-          time: selectedEntryForAlarm.time,
-          label: selectedEntryForAlarm.activity || 'Timetable Reminder',
-          active: true,
-          soundId: selectedAlarmSound
-      };
+      if (isBulkAlarmMode) {
+          // Create alarms for ALL entries
+          const newAlarms: Alarm[] = entries.map((entry, idx) => ({
+              id: `tt-bulk-${Date.now()}-${idx}`,
+              time: entry.time,
+              label: entry.activity || 'Timetable Task',
+              active: true,
+              soundId: selectedAlarmSound
+          }));
 
-      setAlarms([...alarms, newAlarm]);
+          setAlarms([...alarms, ...newAlarms]);
+          if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      } else if (selectedEntryForAlarm) {
+          // Create single alarm
+          const newAlarm: Alarm = {
+              id: `tt-${Date.now()}`,
+              time: selectedEntryForAlarm.time,
+              label: selectedEntryForAlarm.activity || 'Timetable Reminder',
+              active: true,
+              soundId: selectedAlarmSound
+          };
+          setAlarms([...alarms, newAlarm]);
+          if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      }
+
       setIsAlarmModalOpen(false);
       setSelectedEntryForAlarm(null);
-      if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      setIsBulkAlarmMode(false);
   };
 
   // --- File Import Logic ---
@@ -140,12 +167,12 @@ export const TimetableView: React.FC = () => {
     <div className="h-full p-6 md:p-10 max-w-5xl mx-auto w-full flex flex-col animate-fade-in overflow-y-auto custom-scrollbar relative">
        
        {/* Alarm Creation Modal */}
-       {isAlarmModalOpen && selectedEntryForAlarm && (
+       {isAlarmModalOpen && (selectedEntryForAlarm || isBulkAlarmMode) && (
            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
                    <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                           <Bell className="text-amber-500" /> Set Reminder
+                           <Bell className="text-amber-500" /> {isBulkAlarmMode ? 'Set All Reminders' : 'Set Reminder'}
                        </h3>
                        <button onClick={() => setIsAlarmModalOpen(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white">
                            <X size={24} />
@@ -153,9 +180,20 @@ export const TimetableView: React.FC = () => {
                    </div>
                    <div className="p-6 space-y-6">
                        <div className="bg-neutral-50 dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
-                           <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Activity</div>
-                           <div className="text-lg font-bold text-neutral-900 dark:text-white truncate">{selectedEntryForAlarm.activity}</div>
-                           <div className="text-amber-600 dark:text-amber-500 font-mono text-2xl font-bold mt-2">{selectedEntryForAlarm.time}</div>
+                           {isBulkAlarmMode ? (
+                               <>
+                                <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Bulk Action</div>
+                                <div className="text-lg font-bold text-neutral-900 dark:text-white">
+                                    Create alarms for {entries.length} tasks?
+                                </div>
+                               </>
+                           ) : (
+                               <>
+                                <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Activity</div>
+                                <div className="text-lg font-bold text-neutral-900 dark:text-white truncate">{selectedEntryForAlarm?.activity}</div>
+                                <div className="text-amber-600 dark:text-amber-500 font-mono text-2xl font-bold mt-2">{selectedEntryForAlarm?.time}</div>
+                               </>
+                           )}
                        </div>
                        
                        <div className="space-y-2">
@@ -167,7 +205,7 @@ export const TimetableView: React.FC = () => {
                            onClick={handleConfirmAlarm}
                            className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 active:scale-[0.98]"
                        >
-                           <Check size={20} strokeWidth={3} /> SET ALARM
+                           <Check size={20} strokeWidth={3} /> {isBulkAlarmMode ? 'CONFIRM ALL' : 'SET ALARM'}
                        </button>
                    </div>
                </div>
@@ -181,11 +219,22 @@ export const TimetableView: React.FC = () => {
             <p className="text-neutral-500 dark:text-neutral-400 mt-2">Manage your daily tasks and events.</p>
         </div>
         
-        <label className="group flex items-center gap-3 px-5 py-3 bg-neutral-900 dark:bg-neutral-800 hover:bg-amber-500 dark:hover:bg-amber-600 rounded-xl cursor-pointer transition-all border border-neutral-800 hover:border-amber-500 text-sm font-bold text-neutral-300 group-hover:text-white shadow-sm w-full md:w-auto justify-center">
-             <Upload size={18} aria-hidden="true" />
-             <span>IMPORT FILE</span>
-             <input type="file" accept=".txt,.json,.csv,.docx" onChange={handleFileUpload} className="hidden" />
-        </label>
+        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <button 
+                onClick={openBulkAlarmModal}
+                disabled={entries.length === 0}
+                className="group flex items-center gap-3 px-5 py-3 bg-neutral-900 dark:bg-neutral-800 hover:bg-amber-500 dark:hover:bg-amber-600 rounded-xl cursor-pointer transition-all border border-neutral-800 hover:border-amber-500 text-sm font-bold text-neutral-300 group-hover:text-white shadow-sm w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                <BellRing size={18} aria-hidden="true" />
+                <span>NOTIFY ALL</span>
+            </button>
+
+            <label className="group flex items-center gap-3 px-5 py-3 bg-neutral-900 dark:bg-neutral-800 hover:bg-amber-500 dark:hover:bg-amber-600 rounded-xl cursor-pointer transition-all border border-neutral-800 hover:border-amber-500 text-sm font-bold text-neutral-300 group-hover:text-white shadow-sm w-full md:w-auto justify-center">
+                <Upload size={18} aria-hidden="true" />
+                <span>IMPORT FILE</span>
+                <input type="file" accept=".txt,.json,.csv,.docx" onChange={handleFileUpload} className="hidden" />
+            </label>
+        </div>
       </div>
 
       {/* List Container */}
