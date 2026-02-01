@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, AlarmClock, Timer as TimerIcon, Calendar, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Zap, Bell, MonitorX, Lock, AlertCircle } from 'lucide-react';
+import { Clock, AlarmClock, Timer as TimerIcon, Calendar, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Zap, Bell, MonitorX, Lock, AlertCircle, Watch } from 'lucide-react';
 import { ViewState, Timer, Alarm } from './types';
 import { ClockView } from './components/ClockView';
 import { AlarmView } from './components/AlarmView';
 import { TimerView } from './components/TimerView';
+import { StopwatchView } from './components/StopwatchView';
 import { TimetableView } from './components/TimetableView';
 import { audioService } from './services/audioService';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -293,6 +295,9 @@ const App: React.FC = () => {
                   toggleZenMode={() => setZenMode(!isZenMode)}
                />;
         break;
+      case ViewState.STOPWATCH:
+        content = <StopwatchView isZenMode={isZenMode} toggleZenMode={() => setZenMode(!isZenMode)} />;
+        break;
       case ViewState.TIMETABLE: 
         content = <TimetableView alarms={alarms} setAlarms={setAlarms} />;
         break;
@@ -453,6 +458,7 @@ const App: React.FC = () => {
           <NavItem view={ViewState.CLOCK} icon={Clock} label="Clock" />
           <NavItem view={ViewState.ALARM} icon={AlarmClock} label="Alarm" />
           <NavItem view={ViewState.TIMER} icon={TimerIcon} label="Timer" />
+          <NavItem view={ViewState.STOPWATCH} icon={Watch} label="Stopwatch" />
           <NavItem view={ViewState.TIMETABLE} icon={Calendar} label="Timetable" />
         </nav>
 
@@ -470,6 +476,13 @@ const App: React.FC = () => {
            </button>
            
            {renderWakeLockStatus()}
+           
+           {/* Version Indicator */}
+           {isSidebarOpen && (
+               <div className="text-center">
+                   <span className="text-[10px] text-neutral-400 dark:text-neutral-600 font-mono tracking-widest uppercase">v1.2.1</span>
+               </div>
+           )}
         </div>
       </div>
 

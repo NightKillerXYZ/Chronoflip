@@ -1,32 +1,28 @@
 
-const CACHE_NAME = 'chronoflip-v2';
+const CACHE_NAME = 'chronoflip-v3';
 
-// Files to cache immediately
+// Files to cache immediately (The "App Shell")
+// NOTE: We only cache raw assets here. 
+// We do NOT cache .tsx/.ts files because in production (Vite build), 
+// those files are bundled into hashed JS files and do not exist individually.
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/index.tsx',
   '/manifest.json',
   '/icon.svg',
-  '/types.ts',
-  '/App.tsx',
-  '/metadata.json',
-  '/services/audioService.ts',
-  '/hooks/useLocalStorage.ts',
-  '/components/ClockView.tsx',
-  '/components/AlarmView.tsx',
-  '/components/TimerView.tsx',
-  '/components/StopwatchView.tsx',
-  '/components/TimetableView.tsx',
-  '/components/FlipDigit.tsx',
-  '/components/WheelPicker.tsx',
-  '/components/SoundPicker.tsx'
+  '/metadata.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then((cache) => {
+          return cache.addAll(PRECACHE_URLS).catch(err => {
+              console.error("Failed to cache app shell:", err);
+              // We don't throw here to allow partial installs if one file fails,
+              // though ideally, the shell should be perfect.
+          });
+      })
       .then(() => self.skipWaiting())
   );
 });
@@ -37,6 +33,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -61,23 +58,23 @@ self.addEventListener('fetch', (event) => {
         return fetch(fetchRequest).then(
           (response) => {
             // Check if we received a valid response
-            if(!response || response.status !== 200) {
+            if(!response || response.status !== 200 || response.type !== 'basic') {
+              // Note: 'basic' type means it's a request from our origin. 
+              // External requests (like Google Fonts) might be 'cors' or 'opaque'.
+              // We return them but don't necessarily cache them blindly here.
               return response;
             }
 
-            // We only want to cache basic requests or CORS requests (external libs)
-            // Note: Opaque responses (type 'opaque') from no-cors requests 
-            // generally cannot be cached safely for reuse, but in this specific 
-            // dev environment we will try to cache mostly everything to support offline.
-            
+            // We only want to cache GET requests
+            if (event.request.method !== 'GET') {
+                return response;
+            }
+
             const responseToCache = response.clone();
 
             caches.open(CACHE_NAME)
               .then((cache) => {
-                // Don't cache POST requests or other mutations
-                if (event.request.method === 'GET') {
-                    cache.put(event.request, responseToCache);
-                }
+                  cache.put(event.request, responseToCache);
               });
 
             return response;
