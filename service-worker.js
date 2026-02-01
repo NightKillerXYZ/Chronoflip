@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'chronoflip-v1';
+const CACHE_NAME = 'chronoflip-v2';
 
 // Files to cache immediately
 const PRECACHE_URLS = [
