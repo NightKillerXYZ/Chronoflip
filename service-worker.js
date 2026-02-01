@@ -1,3 +1,4 @@
+
 const CACHE_NAME = 'chronoflip-v1';
 
 // Files to cache immediately
@@ -15,6 +16,7 @@ const PRECACHE_URLS = [
   '/components/ClockView.tsx',
   '/components/AlarmView.tsx',
   '/components/TimerView.tsx',
+  '/components/StopwatchView.tsx',
   '/components/TimetableView.tsx',
   '/components/FlipDigit.tsx',
   '/components/WheelPicker.tsx',

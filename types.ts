@@ -1,3 +1,4 @@
+
 export interface Alarm {
   id: string;
   time: string; // HH:mm format
@@ -28,6 +29,7 @@ export enum ViewState {
   CLOCK = 'CLOCK',
   ALARM = 'ALARM',
   TIMER = 'TIMER',
+  STOPWATCH = 'STOPWATCH',
   TIMETABLE = 'TIMETABLE',
 }
 

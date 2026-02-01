@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { FlipDigit } from './FlipDigit';
-import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check, Square } from 'lucide-react';
+import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check, Square, Clock } from 'lucide-react';
 import { Timer, SOUND_PRESETS } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
@@ -138,6 +139,19 @@ export const TimerView: React.FC<TimerViewProps> = ({
     const { h, m, s } = formatTime(activeTimer.remaining);
     const separatorClass = "text-[15vh] pb-[5vh] mx-2 text-neutral-700/50";
 
+    // Calculate finish time
+    let finishTimeString = '';
+    if (activeTimer.status !== 'FINISHED') {
+        const endTime = activeTimer.status === 'RUNNING' && activeTimer.endTime 
+            ? activeTimer.endTime 
+            : Date.now() + (activeTimer.remaining * 1000);
+            
+        finishTimeString = new Date(endTime).toLocaleTimeString(undefined, {
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+    }
+
     return (
         <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-950 relative animate-fade-in">
              <button 
@@ -160,7 +174,16 @@ export const TimerView: React.FC<TimerViewProps> = ({
                     {h} hours {m} minutes {s} seconds remaining
                 </div>
                 
-                <h2 className="text-3xl text-neutral-600 font-mono tracking-[0.3em] uppercase mt-16 mb-10">{activeTimer.label}</h2>
+                <h2 className="text-3xl text-neutral-600 font-mono tracking-[0.3em] uppercase mt-16 mb-4">{activeTimer.label}</h2>
+                
+                {finishTimeString && (
+                     <div className="flex items-center gap-2 mb-10 px-5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-full shadow-sm animate-fade-in group hover:border-amber-500/30 transition-colors">
+                        <Clock size={14} className="text-amber-600" />
+                        <span className="text-xs font-bold tracking-widest text-neutral-400 group-hover:text-neutral-200 transition-colors">
+                            {activeTimer.status === 'RUNNING' ? 'ENDS AT' : 'EST. END'} <span className="text-neutral-200 group-hover:text-white ml-1">{finishTimeString}</span>
+                        </span>
+                     </div>
+                )}
                 
                 {activeTimer.status === 'FINISHED' ? (
                      <div className="flex flex-col sm:flex-row gap-6 items-center animate-bounce">
