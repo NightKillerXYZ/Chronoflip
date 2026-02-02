@@ -1,3 +1,4 @@
+
 class AudioService {
   private audioContext: AudioContext | null = null;
   private isPlaying: boolean = false;
@@ -31,17 +32,25 @@ class AudioService {
     this.init();
   }
 
-  public async addCustomSound(id: string, file: File): Promise<void> {
+  // Used for initial file upload -> gets converted to base64 in App.tsx
+  // This method now expects the raw ArrayBuffer if decoding immediately
+  public async decodeCustomSound(id: string, arrayBuffer: ArrayBuffer): Promise<void> {
     this.init();
     if (!this.audioContext) return;
     
     try {
-        const arrayBuffer = await file.arrayBuffer();
+        // Prevent re-decoding if already exists (optimization)
+        if (this.customSounds.has(id)) return;
+
         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
         this.customSounds.set(id, audioBuffer);
     } catch (e) {
         console.error("Failed to decode custom sound", e);
     }
+  }
+
+  public hasCustomSound(id: string): boolean {
+      return this.customSounds.has(id);
   }
 
   public getCustomSoundIds(): string[] {

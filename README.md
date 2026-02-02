@@ -38,7 +38,7 @@
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/NightKillerXYZ/chronoflip.git
+    git clone https://github.com/yourusername/chronoflip.git
     cd chronoflip
     ```
 
@@ -77,4 +77,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-Built with precision by Shorya Goyal.
+Built with precision by [Your Name].

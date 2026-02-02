@@ -13,6 +13,7 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
   const scrollAccumulator = useRef<number>(0);
+  const totalMoveRef = useRef<number>(0);
 
   const updateValue = (direction: 'up' | 'down') => {
     let next: number;
@@ -44,10 +45,11 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
     }
   };
 
-  // --- Touch Logic (Continuous Scrubbing) ---
+  // --- Touch Logic (Continuous Scrubbing + Tap) ---
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
     scrollAccumulator.current = 0;
+    totalMoveRef.current = 0;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -61,9 +63,10 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
     
     // Add to accumulator
     scrollAccumulator.current += diff;
+    totalMoveRef.current += Math.abs(diff);
 
-    // Threshold pixels to trigger one "tick"
-    const threshold = 15; 
+    // Threshold pixels to trigger one "tick" (Reduced to 12 for better sensitivity)
+    const threshold = 12; 
 
     // Consume accumulator
     while (Math.abs(scrollAccumulator.current) >= threshold) {
@@ -79,9 +82,30 @@ export const WheelPicker: React.FC<WheelPickerProps> = ({ label, value, min, max
     touchStartY.current = currentY; 
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Detect Tap (Low movement)
+    if (totalMoveRef.current < 10 && touchStartY.current !== null) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect) {
+            const tapY = touchStartY.current - rect.top;
+            const mid = rect.height / 2;
+            
+            // Top half -> Previous (down direction logically for value)
+            // Bottom half -> Next (up direction logically for value)
+            if (tapY < mid) {
+                updateValue('down');
+            } else {
+                updateValue('up');
+            }
+            
+            // Prevent ghost clicks that might occur after touchend
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+
     touchStartY.current = null;
     scrollAccumulator.current = 0;
+    totalMoveRef.current = 0;
   };
 
   const fmt = (n: number) => n.toString().padStart(2, '0');

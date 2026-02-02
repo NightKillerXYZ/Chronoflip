@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FlipDigit } from './FlipDigit';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import { AppearanceSettings } from '../types';
 
 interface StopwatchViewProps {
   isZenMode: boolean;
   toggleZenMode: () => void;
+  appearance?: AppearanceSettings;
 }
 
 interface Lap {
@@ -14,13 +15,13 @@ interface Lap {
   total: number; // Total duration from start
 }
 
-export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZenMode }) => {
+export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZenMode, appearance }) => {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
   
   // High precision timing refs
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
   const previousTimeRef = useRef<number>(0);
   const lastLapTimeRef = useRef<number>(0);
@@ -126,17 +127,17 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
     }
   };
 
-  // Dynamic sizing to fit Hours if present
-  // If hours are shown, we scale down slightly on non-zen modes to fit mobile screens comfortably
+  // Dynamic sizing to fit Hours if present (reduced for smaller screens)
+  // We use standard sizes unless we need to squeeze 4 groups of digits
   const cardSizeClass = showHours && !isZenMode
-    ? "w-16 h-24 sm:w-24 sm:h-40" 
+    ? "w-14 h-20 sm:w-20 sm:h-32 md:w-28 md:h-44 lg:w-32 lg:h-52 xl:w-44 xl:h-64" 
     : undefined;
     
   const textSizeClass = showHours && !isZenMode
-    ? "text-4xl sm:text-6xl"
+    ? "text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl"
     : undefined;
 
-  const colonClass = `font-mono font-bold flex items-center justify-center pb-[2vh] sm:pb-8 text-neutral-300 dark:text-neutral-700 ${isZenMode ? 'text-[6vw]' : (showHours ? 'text-2xl sm:text-4xl mx-1' : 'text-4xl sm:text-6xl mx-2')}`;
+  const colonClass = `font-mono font-bold flex items-center justify-center pb-[2vh] sm:pb-8 text-neutral-300 dark:text-neutral-700 ${isZenMode ? 'text-[6vw]' : (showHours ? 'text-2xl sm:text-4xl lg:text-5xl mx-0.5 sm:mx-1' : 'text-4xl sm:text-6xl lg:text-7xl mx-1 sm:mx-2')}`;
 
   return (
     <div className="h-full w-full flex flex-col bg-neutral-100 dark:bg-neutral-950 transition-colors relative">
@@ -159,39 +160,49 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
            {showHours && (
              <>
                 <FlipDigit 
+                    key="stopwatch-hours"
                     value={currentFormatted.h} 
                     label={isZenMode ? undefined : "Hours"} 
                     isZenMode={isZenMode} 
                     cardClassName={cardSizeClass}
                     textClassName={textSizeClass}
+                    appearance={appearance}
                 />
                 <div className={colonClass}>:</div>
              </>
            )}
 
            <FlipDigit 
+                key="stopwatch-minutes"
                 value={currentFormatted.m} 
                 label={isZenMode ? undefined : "Minutes"} 
                 isZenMode={isZenMode}
                 cardClassName={cardSizeClass}
-                textClassName={textSizeClass} 
+                textClassName={textSizeClass}
+                appearance={appearance} 
             />
            
            <div className={colonClass}>:</div>
            
            <FlipDigit 
+                key="stopwatch-seconds"
                 value={currentFormatted.s} 
                 label={isZenMode ? undefined : "Seconds"} 
                 isZenMode={isZenMode}
                 cardClassName={cardSizeClass}
-                textClassName={textSizeClass} 
+                textClassName={textSizeClass}
+                appearance={appearance} 
            />
            
-           {/* Milliseconds */}
-           <div className={`font-mono font-bold text-neutral-400 dark:text-neutral-500 tabular-nums leading-none ml-1 sm:ml-4 flex items-end
-             ${isZenMode ? 'text-[5vw] pb-[2vh] lg:pb-[3vh]' : (showHours ? 'text-2xl sm:text-4xl pb-4 sm:pb-5' : 'text-3xl sm:text-5xl pb-4 sm:pb-6')}`}>
-             <span className="opacity-50 mr-px">.</span>{currentFormatted.cs.toString().padStart(2, '0')}
+           {/* Milliseconds (Centiseconds) - Plain Text */}
+           <div className={`flex flex-col justify-end ml-2 sm:ml-4 pb-4 sm:pb-8`}>
+               <div className={`font-mono font-bold tabular-nums leading-none text-neutral-400 dark:text-neutral-500 flex items-baseline
+                 ${isZenMode ? 'text-[8vw] pb-[2vh]' : 'text-4xl sm:text-5xl lg:text-6xl mb-6 sm:mb-10'}`}>
+                 <span className="opacity-50">.</span>
+                 <span>{currentFormatted.cs.toString().padStart(2, '0')}</span>
+               </div>
            </div>
+
         </div>
 
         {/* Controls */}
@@ -200,32 +211,32 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
             <button
                 onClick={handleLapOrReset}
                 disabled={!isRunning && time === 0}
-                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center border-2 transition-all active:scale-95 focus-visible:ring-4 focus-visible:ring-offset-4 focus-visible:ring-neutral-500 focus-visible:outline-none disabled:opacity-30 disabled:cursor-not-allowed
+                className={`w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center border-2 transition-all active:scale-95 focus-visible:ring-4 focus-visible:ring-offset-4 focus-visible:ring-neutral-500 focus-visible:outline-none disabled:opacity-30 disabled:cursor-not-allowed
                   ${isRunning 
                     ? 'bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700'
                     : 'bg-neutral-200 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-700'
                   }`}
             >
                 {isRunning ? (
-                    <span className="text-sm font-bold tracking-widest uppercase">Lap</span>
+                    <span className="text-sm sm:text-base font-bold tracking-widest uppercase">Lap</span>
                 ) : (
-                    <span className="text-sm font-bold tracking-widest uppercase">Reset</span>
+                    <span className="text-sm sm:text-base font-bold tracking-widest uppercase">Reset</span>
                 )}
             </button>
 
             {/* Right Button: Start / Stop */}
             <button
                 onClick={toggleStart}
-                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center border-2 transition-all active:scale-95 shadow-lg focus-visible:ring-4 focus-visible:ring-offset-4 focus-visible:outline-none
+                className={`w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center border-2 transition-all active:scale-95 shadow-lg focus-visible:ring-4 focus-visible:ring-offset-4 focus-visible:outline-none
                   ${isRunning
                     ? 'bg-red-500/10 border-red-500 text-red-600 dark:text-red-500 hover:bg-red-500/20 focus-visible:ring-red-500' 
                     : 'bg-green-500/10 border-green-500 text-green-600 dark:text-green-500 hover:bg-green-500/20 focus-visible:ring-green-500'
                   }`}
             >
                 {isRunning ? (
-                    <span className="text-sm font-bold tracking-widest uppercase">Stop</span>
+                    <span className="text-sm sm:text-base font-bold tracking-widest uppercase">Stop</span>
                 ) : (
-                    <span className="text-sm font-bold tracking-widest uppercase">Start</span>
+                    <span className="text-sm sm:text-base font-bold tracking-widest uppercase">Start</span>
                 )}
             </button>
         </div>

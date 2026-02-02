@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { TimetableEntry, Alarm, SOUND_PRESETS } from '../types';
+import { TimetableEntry, Alarm, SOUND_PRESETS, CustomSound } from '../types';
 import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
@@ -8,9 +9,17 @@ import mammoth from 'mammoth';
 interface TimetableViewProps {
     alarms: Alarm[];
     setAlarms: (alarms: Alarm[]) => void;
+    defaultSoundId: string;
+    // Custom Sound Props
+    customSounds: CustomSound[];
+    onUpload: (file: File) => void;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
 }
 
-export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms }) => {
+export const TimetableView: React.FC<TimetableViewProps> = ({ 
+    alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete 
+}) => {
   const [entries, setEntries] = useLocalStorage<TimetableEntry[]>('timetable', [
     { id: '1', time: '09:00', activity: 'Morning Standup', notes: 'Discuss Q3 Goals' },
     { id: '2', time: '11:30', activity: 'Deep Work Session', notes: 'Focus on API Integration' },
@@ -23,7 +32,10 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
   const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
   const [isBulkAlarmMode, setIsBulkAlarmMode] = useState(false);
   const [selectedEntryForAlarm, setSelectedEntryForAlarm] = useState<TimetableEntry | null>(null);
-  const [selectedAlarmSound, setSelectedAlarmSound] = useState(SOUND_PRESETS[0].id);
+  const [selectedAlarmSound, setSelectedAlarmSound] = useState(defaultSoundId);
+
+  // Sync with default sound change if modal is closed or sound hasn't been manually touched yet (simplified logic)
+  // We initialize state with the prop, but users might want to change it per alarm.
 
   const updateEntry = (id: string, field: keyof TimetableEntry, value: string) => {
     setEntries(entries.map(e => e.id === id ? { ...e, [field]: value } : e));
@@ -48,6 +60,8 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
   const openAlarmModal = (entry: TimetableEntry) => {
       setSelectedEntryForAlarm(entry);
       setIsBulkAlarmMode(false);
+      // Reset sound selection to current default when opening fresh
+      setSelectedAlarmSound(defaultSoundId);
       setIsAlarmModalOpen(true);
   };
 
@@ -55,6 +69,8 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
       if (entries.length === 0) return;
       setSelectedEntryForAlarm(null);
       setIsBulkAlarmMode(true);
+      // Reset sound selection to current default
+      setSelectedAlarmSound(defaultSoundId);
       setIsAlarmModalOpen(true);
   };
 
@@ -66,7 +82,8 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
               time: entry.time,
               label: entry.activity || 'Timetable Task',
               active: true,
-              soundId: selectedAlarmSound
+              soundId: selectedAlarmSound,
+              days: [] // Initialize as one-time alarm
           }));
 
           setAlarms([...alarms, ...newAlarms]);
@@ -78,7 +95,8 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
               time: selectedEntryForAlarm.time,
               label: selectedEntryForAlarm.activity || 'Timetable Reminder',
               active: true,
-              soundId: selectedAlarmSound
+              soundId: selectedAlarmSound,
+              days: [] // Initialize as one-time alarm
           };
           setAlarms([...alarms, newAlarm]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
@@ -163,6 +181,14 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
     reader.readAsText(file);
   };
 
+  const soundPickerProps = { 
+      customSounds, 
+      onUpload, 
+      onRename, 
+      onDelete,
+      systemDefaultId: defaultSoundId
+  };
+
   return (
     <div className="h-full p-6 md:p-10 max-w-5xl mx-auto w-full flex flex-col animate-fade-in overflow-y-auto custom-scrollbar relative">
        
@@ -198,7 +224,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({ alarms, setAlarms 
                        
                        <div className="space-y-2">
                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Alert Sound</label>
-                           <SoundPicker selectedSoundId={selectedAlarmSound} onSelect={setSelectedAlarmSound} />
+                           <SoundPicker selectedSoundId={selectedAlarmSound} onSelect={setSelectedAlarmSound} {...soundPickerProps} />
                        </div>
                        
                        <button 

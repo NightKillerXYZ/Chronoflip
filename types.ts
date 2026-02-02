@@ -5,6 +5,7 @@ export interface Alarm {
   label: string;
   active: boolean;
   soundId: string;
+  days: number[]; // 0 = Sunday, 1 = Monday, etc. Empty = One time only.
   lastTriggered?: number; // Timestamp to prevent duplicate triggers
 }
 
@@ -25,6 +26,12 @@ export interface TimetableEntry {
   notes: string;
 }
 
+export interface CustomSound {
+  id: string;
+  name: string;
+  data: string; // Base64 Data URI
+}
+
 export enum ViewState {
   CLOCK = 'CLOCK',
   ALARM = 'ALARM',
@@ -41,8 +48,32 @@ export interface SoundPreset {
   category: 'Synth' | 'Melodic' | 'Retro' | 'Custom';
 }
 
+export interface AppearanceSettings {
+  timeFormat: '12h' | '24h';
+  cardShape: 'square' | 'rounded' | 'extra-rounded'; // border-radius
+  numberColor: string; // hex
+  cardColor: string; // hex
+  backgroundColor: string; // hex (overrides theme if set, 'auto' uses theme)
+  isCustom: boolean; // if false, use standard Light/Dark themes
+  timezone: string; // IANA timezone string (e.g. 'America/New_York')
+  locationLabel: string; // Display name (e.g. 'New York')
+  defaultSoundId: string; 
+}
+
+export const DEFAULT_APPEARANCE: AppearanceSettings = {
+  timeFormat: '24h',
+  cardShape: 'rounded',
+  numberColor: 'auto',
+  cardColor: 'auto',
+  backgroundColor: 'auto',
+  isCustom: false,
+  timezone: 'local',
+  locationLabel: 'Local Time',
+  defaultSoundId: 'radar',
+};
+
 export const SOUND_PRESETS: SoundPreset[] = [
-  { id: 'radar', name: 'Radar (Default)', category: 'Synth' },
+  { id: 'radar', name: 'Radar', category: 'Synth' },
   { id: 'ripple', name: 'Ripple', category: 'Melodic' },
   { id: 'cosmic', name: 'Cosmic', category: 'Synth' },
   { id: 'beacon', name: 'Beacon', category: 'Synth' },

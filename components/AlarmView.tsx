@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Bell, BellOff, Pencil, X, Check } from 'lucide-react';
-import { Alarm } from '../types';
+import { Plus, Trash2, Bell, BellOff, Pencil, X, Check, CalendarDays } from 'lucide-react';
+import { Alarm, CustomSound } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
 import { SOUND_PRESETS } from '../types';
@@ -8,14 +9,27 @@ import { SOUND_PRESETS } from '../types';
 interface AlarmViewProps {
     alarms: Alarm[];
     setAlarms: (alarms: Alarm[]) => void;
+    defaultSoundId: string;
+    
+    // Custom Sound Props
+    customSounds: CustomSound[];
+    onUpload: (file: File) => void;
+    onRename: (id: string, newName: string) => void;
+    onDelete: (id: string) => void;
 }
 
-export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
+const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+export const AlarmView: React.FC<AlarmViewProps> = ({ 
+    alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete 
+}) => {
   // "Add New" State
   const [inputHrs, setInputHrs] = useState(8);
   const [inputMins, setInputMins] = useState(0);
   const [newLabel, setNewLabel] = useState('');
-  const [selectedSound, setSelectedSound] = useState(SOUND_PRESETS[0].id);
+  const [selectedSound, setSelectedSound] = useState(defaultSoundId); // Use default
+  const [selectedDays, setSelectedDays] = useState<number[]>([]); // Empty = One time
   
   // "Edit" State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -24,8 +38,20 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
   const [editMins, setEditMins] = useState(0);
   const [editLabel, setEditLabel] = useState('');
   const [editSound, setEditSound] = useState('');
+  const [editDays, setEditDays] = useState<number[]>([]);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const toggleDay = (dayIndex: number, isEdit: boolean) => {
+      const current = isEdit ? editDays : selectedDays;
+      const setter = isEdit ? setEditDays : setSelectedDays;
+      
+      if (current.includes(dayIndex)) {
+          setter(current.filter(d => d !== dayIndex));
+      } else {
+          setter([...current, dayIndex].sort());
+      }
+  };
 
   const addAlarm = () => {
     const id = Date.now().toString();
@@ -35,9 +61,11 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
       time: timeStr, 
       label: newLabel || 'Alarm', 
       active: true,
-      soundId: selectedSound 
+      soundId: selectedSound,
+      days: selectedDays
     }]);
     setNewLabel('');
+    setSelectedDays([]);
     if (navigator.vibrate) navigator.vibrate(50);
   };
 
@@ -49,6 +77,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
       setEditMins(m);
       setEditLabel(alarm.label);
       setEditSound(alarm.soundId);
+      setEditDays(alarm.days || []);
       setIsEditModalOpen(true);
   };
 
@@ -60,7 +89,8 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
           ...a,
           time: timeStr,
           label: editLabel || 'Alarm',
-          soundId: editSound
+          soundId: editSound,
+          days: editDays
       } : a));
       
       setIsEditModalOpen(false);
@@ -84,9 +114,26 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
     setAlarms(alarms.map(a => a.id === id ? { ...a, active: !a.active } : a));
   };
 
+  // Helper to display selected days
+  const formatDays = (days: number[]) => {
+      if (!days || days.length === 0) return 'Once';
+      if (days.length === 7) return 'Every day';
+      if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends';
+      if (days.length === 5 && !days.includes(0) && !days.includes(6)) return 'Weekdays';
+      return days.map(d => FULL_DAYS[d].slice(0, 3)).join(', ');
+  };
+
   useEffect(() => {
     if (Notification.permission === 'default') Notification.requestPermission();
   }, []);
+
+  const soundPickerProps = { 
+      customSounds, 
+      onUpload, 
+      onRename, 
+      onDelete,
+      systemDefaultId: defaultSoundId 
+    };
 
   return (
     <div className="h-full w-full overflow-y-auto custom-scrollbar p-4 sm:p-6 md:p-10 animate-fade-in relative">
@@ -110,6 +157,25 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                     </div>
 
                     <div className="space-y-4">
+                        {/* Day Selector */}
+                        <div className="space-y-2">
+                             <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Repeat</label>
+                             <div className="flex justify-between bg-neutral-100 dark:bg-neutral-950 rounded-xl p-2">
+                                 {DAYS.map((day, idx) => {
+                                     const isSelected = editDays.includes(idx);
+                                     return (
+                                         <button
+                                             key={idx}
+                                             onClick={() => toggleDay(idx, true)}
+                                             className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${isSelected ? 'bg-amber-500 text-black shadow-md' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'}`}
+                                         >
+                                             {day}
+                                         </button>
+                                     );
+                                 })}
+                             </div>
+                        </div>
+
                         <div className="space-y-2">
                             <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Label</label>
                             <input 
@@ -121,7 +187,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                         </div>
                         <div className="space-y-2">
                             <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Ringtone</label>
-                            <SoundPicker selectedSoundId={editSound} onSelect={setEditSound} />
+                            <SoundPicker selectedSoundId={editSound} onSelect={setEditSound} {...soundPickerProps} />
                         </div>
                     </div>
                 </div>
@@ -150,6 +216,26 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
             </div>
             
             <div className="flex flex-col gap-3 sm:gap-5 w-full flex-1">
+            
+            {/* Day Selector (Add) */}
+            <div className="space-y-1 sm:space-y-2">
+                 <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Repeat</label>
+                 <div className="flex justify-between bg-neutral-100 dark:bg-neutral-950 rounded-xl p-2 sm:p-3">
+                     {DAYS.map((day, idx) => {
+                         const isSelected = selectedDays.includes(idx);
+                         return (
+                             <button
+                                 key={idx}
+                                 onClick={() => toggleDay(idx, false)}
+                                 className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm font-bold transition-all ${isSelected ? 'bg-amber-500 text-black shadow-md' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200'}`}
+                             >
+                                 {day}
+                             </button>
+                         );
+                     })}
+                 </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5">
                 <div className="space-y-1 sm:space-y-2">
                     <label htmlFor="alarm-label" className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Label</label>
@@ -164,7 +250,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                 </div>
                 <div className="space-y-1 sm:space-y-2">
                     <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Ringtone</label>
-                    <SoundPicker selectedSoundId={selectedSound} onSelect={setSelectedSound} />
+                    <SoundPicker selectedSoundId={selectedSound} onSelect={setSelectedSound} {...soundPickerProps} />
                 </div>
             </div>
             
@@ -202,9 +288,12 @@ export const AlarmView: React.FC<AlarmViewProps> = ({ alarms, setAlarms }) => {
                     <div className="flex flex-col sm:flex-row gap-1 sm:gap-3 items-start sm:items-center mt-1">
                         <span className="text-neutral-600 dark:text-neutral-400 font-medium text-sm">{alarm.label}</span>
                         <span className="hidden sm:inline h-1 w-1 rounded-full bg-neutral-300 dark:bg-neutral-700" aria-hidden="true"></span>
-                        <span className="text-neutral-400 dark:text-neutral-500 text-[10px] sm:text-xs font-mono uppercase tracking-wide">
-                            {SOUND_PRESETS.find(s => s.id === alarm.soundId)?.name || 'Default'}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <CalendarDays size={12} className="text-amber-500" />
+                            <span className="text-neutral-500 dark:text-neutral-400 text-[10px] sm:text-xs font-bold uppercase tracking-wide">
+                                {formatDays(alarm.days)}
+                            </span>
+                        </div>
                     </div>
                 </div>
                 </div>

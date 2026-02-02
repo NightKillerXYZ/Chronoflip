@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FlipDigit } from './FlipDigit';
 import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check, Square, Clock } from 'lucide-react';
-import { Timer, SOUND_PRESETS } from '../types';
+import { Timer, SOUND_PRESETS, AppearanceSettings, CustomSound } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
 
@@ -16,18 +16,27 @@ interface TimerViewProps {
   isZenMode: boolean;
   toggleZenMode: () => void;
   // We need a way to pass edits back up since state is in App.tsx
-  updateTimer: (timer: Timer) => void; 
+  updateTimer: (timer: Timer) => void;
+  appearance?: AppearanceSettings;
+  defaultSoundId: string;
+
+  // Custom Sound Props
+  customSounds: CustomSound[];
+  onUpload: (file: File) => void;
+  onRename: (id: string, newName: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export const TimerView: React.FC<TimerViewProps> = ({ 
-  timers, addTimer, removeTimer, toggleTimer, resetTimer, snoozeTimer, updateTimer, isZenMode, toggleZenMode 
+  timers, addTimer, removeTimer, toggleTimer, resetTimer, snoozeTimer, updateTimer, isZenMode, toggleZenMode, appearance, defaultSoundId,
+  customSounds, onUpload, onRename, onDelete
 }) => {
   // Add State
   const [inputHrs, setInputHrs] = useState(0);
   const [inputMins, setInputMins] = useState(5);
   const [inputSecs, setInputSecs] = useState(0);
   const [newLabel, setNewLabel] = useState('');
-  const [selectedSound, setSelectedSound] = useState(SOUND_PRESETS[0].id);
+  const [selectedSound, setSelectedSound] = useState(defaultSoundId); // Use Default
   const [zenFocusId, setZenFocusId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -133,6 +142,14 @@ export const TimerView: React.FC<TimerViewProps> = ({
     return { h, m, s };
   };
 
+  const soundPickerProps = { 
+      customSounds, 
+      onUpload, 
+      onRename, 
+      onDelete,
+      systemDefaultId: defaultSoundId 
+    };
+
   // --- ZEN MODE VIEW ---
   if (isZenMode && timers.length > 0) {
     const activeTimer = getZenTimer();
@@ -164,11 +181,11 @@ export const TimerView: React.FC<TimerViewProps> = ({
 
             <div className="flex-1 flex flex-col items-center justify-center w-full" role="timer" aria-label={`Timer: ${activeTimer.label}`}>
                 <div className="flex items-end justify-center scale-90 sm:scale-100" aria-hidden="true">
-                    <FlipDigit value={h} isZenMode={true} />
+                    <FlipDigit value={h} isZenMode={true} appearance={appearance} />
                     <div className={`font-mono font-bold animate-pulse flex items-center ${separatorClass}`}>:</div>
-                    <FlipDigit value={m} isZenMode={true} />
+                    <FlipDigit value={m} isZenMode={true} appearance={appearance} />
                     <div className={`font-mono font-bold animate-pulse flex items-center ${separatorClass}`}>:</div>
-                    <FlipDigit value={s} isZenMode={true} />
+                    <FlipDigit value={s} isZenMode={true} appearance={appearance} />
                 </div>
                 <div className="sr-only">
                     {h} hours {m} minutes {s} seconds remaining
@@ -267,7 +284,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
                         </div>
                         <div className="space-y-2">
                             <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Ringtone</label>
-                            <SoundPicker selectedSoundId={editSound} onSelect={setEditSound} />
+                            <SoundPicker selectedSoundId={editSound} onSelect={setEditSound} {...soundPickerProps} />
                         </div>
                     </div>
                 </div>
@@ -316,6 +333,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
                     <SoundPicker 
                         selectedSoundId={selectedSound} 
                         onSelect={setSelectedSound} 
+                        {...soundPickerProps}
                     />
                  </div>
 
@@ -362,11 +380,11 @@ export const TimerView: React.FC<TimerViewProps> = ({
                      <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-[0.2em] mb-4 truncate w-full text-center px-14">{timer.label}</div>
                      
                      <div className="flex items-end justify-center gap-2 mb-6" aria-label={`${h} hours ${m} minutes ${s} seconds remaining`} role="timer">
-                        <FlipDigit value={h} cardClassName={gridCardSize} textClassName={gridTextSize} />
+                        <FlipDigit value={h} cardClassName={gridCardSize} textClassName={gridTextSize} appearance={appearance} />
                         <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 flex items-center" aria-hidden="true">:</div>
-                        <FlipDigit value={m} cardClassName={gridCardSize} textClassName={gridTextSize} />
+                        <FlipDigit value={m} cardClassName={gridCardSize} textClassName={gridTextSize} appearance={appearance} />
                         <div className="text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 flex items-center" aria-hidden="true">:</div>
-                        <FlipDigit value={s} cardClassName={gridCardSize} textClassName={gridTextSize} />
+                        <FlipDigit value={s} cardClassName={gridCardSize} textClassName={gridTextSize} appearance={appearance} />
                      </div>
 
                      <div className="flex items-center gap-3 w-full justify-center">
