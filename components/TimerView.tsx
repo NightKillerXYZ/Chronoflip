@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlipDigit } from './FlipDigit';
 import { Play, Pause, RotateCcw, Plus, Trash2, Maximize2, Minimize2, Bell, Pencil, X, Check, Square, Clock } from 'lucide-react';
 import { Timer, SOUND_PRESETS, AppearanceSettings, CustomSound } from '../types';
@@ -31,6 +31,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
   timers, addTimer, removeTimer, toggleTimer, resetTimer, snoozeTimer, updateTimer, isZenMode, toggleZenMode, appearance, defaultSoundId,
   customSounds, onUpload, onRename, onDelete
 }) => {
+    const isGlass = Boolean(appearance?.transparentMode);
   // Add State
   const [inputHrs, setInputHrs] = useState(0);
   const [inputMins, setInputMins] = useState(5);
@@ -67,6 +68,15 @@ export const TimerView: React.FC<TimerViewProps> = ({
           setTimeout(() => setDeleteConfirmId(null), 3000);
       }
   };
+
+    const getQuickTimer = () => {
+        if (timers.length === 0) return undefined;
+        const running = timers.find(t => t.status === 'RUNNING');
+        const paused = timers.find(t => t.status === 'PAUSED');
+        const idle = timers.find(t => t.status === 'IDLE');
+        const finished = timers.find(t => t.status === 'FINISHED');
+        return running || paused || idle || finished || timers[0];
+    };
 
   // --- Edit Logic ---
   const openEditModal = (timer: Timer) => {
@@ -135,6 +145,38 @@ export const TimerView: React.FC<TimerViewProps> = ({
     }
   };
 
+    useEffect(() => {
+        const handleHotkey = (event: Event) => {
+            const detail = (event as CustomEvent<{ action?: string }>).detail;
+            if (!detail?.action) return;
+
+            if (detail.action === 'toggle-zen') {
+                handleZenToggle();
+                return;
+            }
+
+            const quickTimer = getQuickTimer();
+            if (!quickTimer) return;
+
+            if (detail.action === 'toggle-primary') {
+                if (quickTimer.status === 'FINISHED') {
+                    resetTimer(quickTimer.id);
+                    toggleTimer(quickTimer.id);
+                    return;
+                }
+                toggleTimer(quickTimer.id);
+                return;
+            }
+
+            if (detail.action === 'reset-primary') {
+                resetTimer(quickTimer.id);
+            }
+        };
+
+        window.addEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+        return () => window.removeEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+    }, [timers, isZenMode, toggleZenMode, resetTimer, toggleTimer]);
+
   const formatTime = (totalSeconds: number) => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
@@ -170,7 +212,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
     }
 
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full bg-neutral-950 relative animate-fade-in">
+        <div className={`flex flex-col items-center justify-center h-full w-full relative animate-fade-in ${isGlass ? 'bg-transparent' : 'bg-neutral-950'}`}>
              <button 
                 onClick={() => handleZenToggle()}
                 aria-label="Exit Focus Mode"
@@ -194,7 +236,7 @@ export const TimerView: React.FC<TimerViewProps> = ({
                 <h2 className="text-3xl text-neutral-600 font-mono tracking-[0.3em] uppercase mt-16 mb-4">{activeTimer.label}</h2>
                 
                 {finishTimeString && (
-                     <div className="flex items-center gap-2 mb-10 px-5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-full shadow-sm animate-fade-in group hover:border-amber-500/30 transition-colors">
+                     <div className={`flex items-center gap-2 mb-10 px-5 py-2.5 rounded-full shadow-sm animate-fade-in group hover:border-amber-500/30 transition-colors ${isGlass ? 'bg-neutral-100/50 dark:bg-neutral-900/50 border border-white/20 dark:border-white/10 backdrop-blur-2xl' : 'bg-neutral-900 border border-neutral-800'}`}>
                         <Clock size={14} className="text-amber-600" />
                         <span className="text-xs font-bold tracking-widest text-neutral-400 group-hover:text-neutral-200 transition-colors">
                             {activeTimer.status === 'RUNNING' ? 'ENDS AT' : 'EST. END'} <span className="text-neutral-200 group-hover:text-white ml-1">{finishTimeString}</span>

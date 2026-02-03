@@ -11,9 +11,9 @@ interface FlipDigitProps {
   appearance?: AppearanceSettings;
   variant?: 'default' | 'fast'; // 'fast' disables 3D flip for rapid updates (e.g. stopwatch ms)
 }
-
-export const FlipDigit = memo(({ 
-  value, 
+  const labelClass = isZenMode
+    ? "hidden"
+    : `text-[11px] sm:text-sm xl:text-base font-bold tracking-[0.22em] uppercase opacity-70 whitespace-nowrap ${
   label, 
   isZenMode = false,
   cardClassName,
@@ -98,18 +98,30 @@ export const FlipDigit = memo(({
       ? "text-[14vw] lg:text-[26vh] tracking-tight" 
       : "text-6xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-[8.5rem] 2xl:text-[10.5rem]"; 
 
-  const labelClass = isZenMode
-    ? "hidden"
-    : "text-[11px] sm:text-sm xl:text-base font-bold text-neutral-400 dark:text-neutral-500 tracking-[0.28em] uppercase opacity-70 whitespace-nowrap";
-    
   const spacingClass = isZenMode ? "mx-[1vw] lg:mx-[1.5vw]" : "mx-1.5 sm:mx-3 md:mx-4 lg:mx-5";
 
   // Appearance Logic
   const defaultCardBg = "bg-[#e5e5e5] dark:bg-[#202023]"; 
-  const defaultTextColor = "text-neutral-800 dark:text-[#f0f0f0]";
-  
-  const cardBgClass = (appearance?.isCustom && appearance.cardColor !== 'auto') ? '' : defaultCardBg;
-  const textColorClass = (appearance?.isCustom && appearance.numberColor !== 'auto') ? '' : defaultTextColor;
+  const defaultTextColor = "text-neutral-900 dark:text-[#f0f0f0]";
+
+  const isTransparent = Boolean(appearance?.transparentMode);
+  const transparentCardBg = "bg-neutral-100/55 dark:bg-neutral-900/45 backdrop-blur-2xl";
+  const transparentTextColor = "text-neutral-900/90 dark:text-white/90";
+
+  const labelClass = isZenMode
+    ? "hidden"
+    : `text-[11px] sm:text-sm xl:text-base font-bold tracking-[0.22em] uppercase opacity-70 whitespace-nowrap ${
+        isTransparent ? 'text-white/70 dark:text-white/60' : 'text-neutral-400 dark:text-neutral-500'
+      }`;
+
+  const cardBgClass = (appearance?.isCustom && appearance.cardColor !== 'auto')
+    ? ''
+    : (isTransparent ? transparentCardBg : defaultCardBg);
+  const textColorClass = (appearance?.isCustom && appearance.numberColor !== 'auto')
+    ? ''
+    : (isTransparent ? transparentTextColor : defaultTextColor);
+
+  const flipBgClass = isTransparent ? 'bg-neutral-100/75 dark:bg-neutral-900/60 backdrop-blur-2xl' : cardBgClass;
 
   // SOFTER EDGES: Increased radius values for a less "edgey" look
   const getRadiusClasses = () => {
@@ -131,13 +143,32 @@ export const FlipDigit = memo(({
       return style;
   };
   const customFaceStyle = getCustomStyle();
-  const numberShadow = appearance?.numberColor !== 'auto' ? { textShadow: '0 2px 10px rgba(0,0,0,0.1)' } : {};
+  const numberShadow = appearance?.numberColor !== 'auto'
+    ? { textShadow: '0 2px 10px rgba(0,0,0,0.1)' }
+    : isTransparent
+      ? { textShadow: '0 6px 20px rgba(0,0,0,0.25)' }
+      : {};
 
   // --- Visual Assets ---
   const highlightGradient = "bg-gradient-to-b from-white/20 to-transparent"; 
   const shadowGradient = "bg-gradient-to-t from-black/30 to-transparent";    
 
-  const numberClass = `absolute left-0 right-0 w-full h-[200%] flex items-center justify-center font-mono font-bold leading-none ${fontSizeClass} ${textColorClass}`;
+  const topBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/10 dark:border-black/50';
+    const topBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/10 dark:border-black/40';
+    const bottomBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-white/20 dark:border-white/8';
+    const centerLineClass = isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/35 dark:bg-black/70';
+  const containerBgClass = isTransparent ? 'bg-white/15 dark:bg-black/25 backdrop-blur-xl' : 'bg-neutral-900/10 dark:bg-black/20';
+  const glassRingClass = isTransparent ? 'ring-1 ring-white/20 dark:ring-white/10' : '';
+
+  const numberClass = `absolute left-0 right-0 w-full h-[200%] flex items-center justify-center font-mono font-bold leading-none z-10 ${fontSizeClass} ${textColorClass}`;
+
+  const topHighlightOpacity = isTransparent ? 'opacity-35' : 'opacity-50';
+  const bottomShadowOpacity = isTransparent ? 'opacity-22' : 'opacity-30';
+  const flipperHighlightOpacity = isTransparent ? 'opacity-40' : 'opacity-80';
+  const flipperShadowOpacity = isTransparent ? 'opacity-40' : 'opacity-80';
+  const topInsetShadow = isTransparent ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]' : 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]';
+  const flipperTopInset = isTransparent ? 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.04)]' : 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]';
+  const flipperBottomInset = isTransparent ? 'shadow-[inset_0_-1px_2px_rgba(0,0,0,0.08)]' : 'shadow-[inset_0_-1px_2px_rgba(0,0,0,0.2)]';
   
   // --- FAST MODE RENDERING (Stopwatch Centiseconds) ---
   // Now uses the EXACT SAME appearance as standard cards, just without the split line and flip mechanics.
@@ -145,23 +176,26 @@ export const FlipDigit = memo(({
      return (
        <div className={`flex flex-col items-center ${spacingClass} group select-none`}>
          <div 
-           className={`relative ${containerClass} ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
+           className={`relative ${containerClass} ${radiusFull} shadow-2xl ${containerBgClass} ${glassRingClass} transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
            role="img" 
            aria-label={value.toString()}
          >
             {/* Unified Card Body */}
-            <div className={`absolute inset-0 overflow-hidden ${radiusFull} ${cardBgClass} border border-black/5 dark:border-white/5`} style={customFaceStyle}>
+            <div className={`absolute inset-0 overflow-hidden ${radiusFull} ${cardBgClass} border ${isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/5 dark:border-white/5'}`} style={customFaceStyle}>
                 <div className="relative w-full h-full flex items-center justify-center">
                     {/* Centered Number */}
-                    <span className={`font-mono font-bold leading-none ${fontSizeClass} ${textColorClass}`} style={{...numberShadow, ...customFaceStyle}}>
+                    <span className={`font-mono font-bold leading-none ${fontSizeClass} ${textColorClass} relative z-10`} style={{...numberShadow, ...customFaceStyle}}>
                         {format(value)}
                     </span>
                     
                     {/* Lighting Effects (Unified) */}
-                    <div className={`absolute inset-0 ${highlightGradient} opacity-40`}></div>
-                    <div className="absolute inset-0 shadow-[inset_0_2px_10px_rgba(0,0,0,0.1)]"></div>
+                    <div className={`absolute inset-0 ${highlightGradient} opacity-30`}></div>
+                    <div className="absolute inset-0 shadow-[inset_0_2px_10px_rgba(0,0,0,0.08)]"></div>
                 </div>
             </div>
+            {isTransparent && (
+              <div className={`absolute inset-0 ${radiusFull} pointer-events-none bg-gradient-to-br from-white/25 via-white/5 to-transparent`} />
+            )}
          </div>
          {label && <span className={`${labelClass} mt-4 sm:mt-6`}>{label}</span>}
        </div>
@@ -172,24 +206,24 @@ export const FlipDigit = memo(({
   return (
     <div className={`flex flex-col items-center ${spacingClass} group select-none`}>
       <div 
-        className={`relative ${containerClass} perspective-1000 ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
+        className={`relative ${containerClass} perspective-1000 ${radiusFull} shadow-2xl ${containerBgClass} ${glassRingClass} transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
         role="img" 
         aria-label={value.toString()}
       >
         
         {/* Layer 1: Static Background */}
-        <div className={`absolute top-0 left-0 right-0 h-1/2 overflow-hidden z-0 backface-hidden ${radiusTop} ${cardBgClass} border-b border-black/10 dark:border-black/50`} style={customFaceStyle}>
+        <div className={`absolute top-0 left-0 right-0 h-1/2 overflow-hidden z-0 backface-hidden ${radiusTop} ${cardBgClass} border-b ${topBorderClass}`} style={customFaceStyle}>
              <div className="relative w-full h-full">
                  <span className={`${numberClass} top-0`} style={numberShadow}>{format(nextValue)}</span>
-                 <div className={`absolute inset-0 ${highlightGradient} opacity-50`}></div>
-                 <div className="absolute inset-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]"></div>
+                 <div className={`absolute inset-0 ${highlightGradient} ${topHighlightOpacity}`}></div>
+                 <div className={`absolute inset-0 ${topInsetShadow}`}></div>
              </div>
         </div>
 
-        <div className={`absolute bottom-0 left-0 right-0 h-1/2 overflow-hidden z-0 backface-hidden ${radiusBottom} ${cardBgClass} border-t border-white/20 dark:border-white/5`} style={customFaceStyle}>
+        <div className={`absolute bottom-0 left-0 right-0 h-1/2 overflow-hidden z-0 backface-hidden ${radiusBottom} ${cardBgClass} border-t ${bottomBorderClass}`} style={customFaceStyle}>
              <div className="relative w-full h-full">
                  <span className={`${numberClass} -top-full`} style={numberShadow}>{format(displayValue)}</span>
-                 <div className={`absolute inset-0 ${shadowGradient} opacity-30`}></div>
+                 <div className={`absolute inset-0 ${shadowGradient} ${bottomShadowOpacity}`}></div>
              </div>
         </div>
 
@@ -198,25 +232,30 @@ export const FlipDigit = memo(({
           className={`absolute top-0 left-0 right-0 h-1/2 z-10 origin-bottom transform-style-3d will-change-transform ${isFlipping ? 'animate-flip' : ''}`}
           onAnimationEnd={handleAnimationEnd}
         >
-            <div className={`absolute inset-0 backface-hidden overflow-hidden ${radiusTop} ${cardBgClass} border-b border-black/10 dark:border-black/50`} style={customFaceStyle}>
+            <div className={`absolute inset-0 backface-hidden overflow-hidden ${radiusTop} ${flipBgClass} border-b ${topBorderClass}`} style={customFaceStyle}>
                 <div className="relative w-full h-full">
                     <span className={`${numberClass} top-0`} style={numberShadow}>{format(displayValue)}</span>
-                    <div className={`absolute inset-0 ${highlightGradient} opacity-80`}></div>
-                    <div className="absolute inset-0 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]"></div>
+                    <div className={`absolute inset-0 ${highlightGradient} ${flipperHighlightOpacity}`}></div>
+                    <div className={`absolute inset-0 ${flipperTopInset}`}></div>
                 </div>
             </div>
 
-            <div className={`absolute inset-0 backface-hidden overflow-hidden rotate-x-180 ${radiusBottom} ${cardBgClass} border-t border-white/20 dark:border-white/5`} style={customFaceStyle}>
+            <div className={`absolute inset-0 backface-hidden overflow-hidden rotate-x-180 ${radiusBottom} ${flipBgClass} border-t ${bottomBorderClass}`} style={customFaceStyle}>
                 <div className="relative w-full h-full">
                     <span className={`${numberClass} -top-full`} style={numberShadow}>{format(nextValue)}</span>
-                    <div className={`absolute inset-0 ${shadowGradient} opacity-80`}></div>
-                    <div className="absolute inset-0 shadow-[inset_0_-1px_2px_rgba(0,0,0,0.2)]"></div>
+                    <div className={`absolute inset-0 ${shadowGradient} ${flipperShadowOpacity}`}></div>
+                    <div className={`absolute inset-0 ${flipperBottomInset}`}></div>
                 </div>
             </div>
         </div>
 
         {/* Overlays */}
-        <div className="absolute top-1/2 left-0 right-0 h-px z-20 bg-black/40 dark:bg-black/80 shadow-[0_1px_0_rgba(255,255,255,0.1)]"></div>
+        {isTransparent && (
+          <div className={`absolute inset-0 ${radiusFull} pointer-events-none bg-gradient-to-br from-white/25 via-white/5 to-transparent`} />
+        )}
+        <div className={`absolute top-1/2 left-0 right-0 h-px z-20 ${centerLineClass} shadow-[0_1px_0_rgba(255,255,255,0.1)]`}></div>
+        <div className={`absolute top-1/2 -left-[1px] -translate-y-1/2 h-3 w-[3px] z-20 rounded-r-full ${isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/25 dark:bg-white/10'}`}></div>
+        <div className={`absolute top-1/2 -right-[1px] -translate-y-1/2 h-3 w-[3px] z-20 rounded-l-full ${isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/25 dark:bg-white/10'}`}></div>
         
         {!isZenMode && (
           <>

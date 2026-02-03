@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Bell, BellOff, Pencil, X, Check, CalendarDays } from 'lucide-react';
-import { Alarm, CustomSound } from '../types';
+import { Alarm, CustomSound, AppearanceSettings } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
 import { SOUND_PRESETS } from '../types';
@@ -10,6 +10,7 @@ interface AlarmViewProps {
     alarms: Alarm[];
     setAlarms: (alarms: Alarm[]) => void;
     defaultSoundId: string;
+    appearance?: AppearanceSettings;
     
     // Custom Sound Props
     customSounds: CustomSound[];
@@ -22,8 +23,12 @@ const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export const AlarmView: React.FC<AlarmViewProps> = ({ 
-    alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete 
+    alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete, appearance
 }) => {
+  const isGlass = Boolean(appearance?.transparentMode);
+    const glassPanelClass = isGlass
+        ? 'bg-neutral-100/55 dark:bg-neutral-900/50 border-white/20 dark:border-white/10 backdrop-blur-2xl'
+    : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800';
   // "Add New" State
   const [inputHrs, setInputHrs] = useState(8);
   const [inputMins, setInputMins] = useState(0);
@@ -141,7 +146,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
       {/* Edit Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className={`${glassPanelClass} border w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]`}>
                 <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                     <h3 className="text-xl font-bold text-neutral-900 dark:text-white">Edit Alarm</h3>
                     <button onClick={() => setIsEditModalOpen(false)} className="text-neutral-400 hover:text-neutral-600 dark:hover:text-white">
@@ -150,7 +155,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                 </div>
                 
                 <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
-                     <div className="flex gap-2 sm:gap-4 items-center justify-center bg-neutral-50 dark:bg-neutral-950/50 p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+                     <div className={`${isGlass ? 'bg-white/25 dark:bg-white/6 border-white/20 dark:border-white/10' : 'bg-neutral-50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} p-4 sm:p-6 rounded-2xl border flex gap-2 sm:gap-4 items-center justify-center`}>
                         <WheelPicker label="HOURS" value={editHrs} onChange={setEditHrs} min={0} max={23} />
                         <div className="text-xl sm:text-3xl font-mono text-neutral-300 dark:text-neutral-700 pb-6 sm:pb-8 opacity-50" aria-hidden="true">:</div>
                         <WheelPicker label="MINUTES" value={editMins} onChange={setEditMins} min={0} max={59} />
@@ -160,7 +165,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                         {/* Day Selector */}
                         <div className="space-y-2">
                              <label className="block text-neutral-500 text-xs font-bold uppercase tracking-wider pl-1">Repeat</label>
-                             <div className="flex justify-between bg-neutral-100 dark:bg-neutral-950 rounded-xl p-2">
+                             <div className={`${isGlass ? 'bg-white/25 dark:bg-white/6' : 'bg-neutral-100 dark:bg-neutral-950'} rounded-xl p-2 flex justify-between`}>
                                  {DAYS.map((day, idx) => {
                                      const isSelected = editDays.includes(idx);
                                      return (
@@ -182,7 +187,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                                 type="text" 
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
-                                className="w-full bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 sm:p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium"
+                                className={`w-full rounded-xl p-3 sm:p-3.5 text-neutral-900 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition-all font-medium ${isGlass ? 'bg-white/25 dark:bg-white/6 border border-white/20 dark:border-white/10' : 'bg-neutral-100 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800'}`}
                             />
                         </div>
                         <div className="space-y-2">
@@ -266,18 +271,18 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
         {/* List Section */}
         <div className="space-y-4 pb-20" role="list">
             {alarms.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 italic border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-2xl">
+            <div className={`flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 italic border-2 border-dashed rounded-2xl ${isGlass ? 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5' : 'border-neutral-200 dark:border-neutral-800'}`}>
                 <BellOff size={48} className="mb-4 opacity-20" aria-hidden="true" />
                 <p>No active alarms</p>
             </div>
             )}
             {alarms.map(alarm => (
-            <div key={alarm.id} role="listitem" className="bg-white dark:bg-neutral-900/60 p-4 sm:p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 flex items-center justify-between group hover:border-amber-500/30 dark:hover:border-neutral-700 transition-all shadow-sm hover:shadow-md hover:bg-neutral-50 dark:hover:bg-neutral-900">
+            <div key={alarm.id} role="listitem" className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between group transition-all shadow-sm hover:shadow-md ${isGlass ? 'bg-white/25 dark:bg-white/8 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/12' : 'bg-white dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:border-amber-500/30 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
                 <div className="flex items-center gap-4 sm:gap-6">
                 <button 
                     onClick={() => toggleAlarm(alarm.id)}
                     aria-label={alarm.active ? "Turn off alarm" : "Turn on alarm"}
-                    className={`p-3 sm:p-3.5 rounded-full transition-all duration-300 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${alarm.active ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600'}`}
+                    className={`p-3 sm:p-3.5 rounded-full transition-all duration-300 shadow-sm focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none ${alarm.active ? 'bg-amber-500/10 text-amber-600 dark:text-amber-500' : (isGlass ? 'bg-white/25 dark:bg-white/8 text-neutral-400 dark:text-neutral-300' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600')}`}
                 >
                     {alarm.active ? <Bell size={20} className="fill-current sm:w-6 sm:h-6" aria-hidden="true" /> : <BellOff size={20} className="sm:w-6 sm:h-6" aria-hidden="true" />}
                 </button>

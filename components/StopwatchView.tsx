@@ -16,6 +16,7 @@ interface Lap {
 }
 
 export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZenMode, appearance }) => {
+  const isGlass = Boolean(appearance?.transparentMode);
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState<Lap[]>([]);
@@ -40,6 +41,7 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
     if (isRunning) {
       // STOP
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      requestRef.current = 0;
       previousTimeRef.current = time;
       startTimeRef.current = 0; // Reset for next start
       setIsRunning(false);
@@ -75,11 +77,68 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
     }
   };
 
+  const resetStopwatch = () => {
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    setIsRunning(false);
+    setTime(0);
+    setLaps([]);
+    previousTimeRef.current = 0;
+    lastLapTimeRef.current = 0;
+    startTimeRef.current = 0;
+  };
+
   useEffect(() => {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (isRunning) {
+      if (!requestRef.current) {
+        requestRef.current = requestAnimationFrame(animate);
+      }
+      return;
+    }
+
+    if (requestRef.current) {
+      cancelAnimationFrame(requestRef.current);
+      requestRef.current = 0;
+    }
+  }, [isRunning, animate]);
+
+  const handleZenToggle = () => {
+    toggleZenMode();
+    if (!isZenMode) {
+       if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const handleHotkey = (event: Event) => {
+      const detail = (event as CustomEvent<{ action?: string }>).detail;
+      if (!detail?.action) return;
+
+      if (detail.action === 'toggle-zen') {
+        handleZenToggle();
+        return;
+      }
+
+      if (detail.action === 'toggle-primary') {
+        toggleStart();
+        return;
+      }
+
+      if (detail.action === 'reset-primary') {
+        resetStopwatch();
+      }
+    };
+
+    window.addEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+    return () => window.removeEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+  }, [handleZenToggle, resetStopwatch, toggleStart]);
 
   // Format Helper: HH:MM:SS.ms
   const format = (ms: number) => {
@@ -118,15 +177,6 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
     return `${mStr}:${sStr}.${csStr}`;
   };
 
-  const handleZenToggle = () => {
-    toggleZenMode();
-    if (!isZenMode) {
-       if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    }
-  };
-
   // Dynamic sizing to fit Hours if present (reduced for smaller screens)
   // We use standard sizes unless we need to squeeze 4 groups of digits
   const cardSizeClass = showHours && !isZenMode
@@ -137,10 +187,10 @@ export const StopwatchView: React.FC<StopwatchViewProps> = ({ isZenMode, toggleZ
     ? "text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl"
     : undefined;
 
-  const colonClass = `font-mono font-bold flex items-center justify-center pb-[2vh] sm:pb-8 text-neutral-300 dark:text-neutral-700 ${isZenMode ? 'text-[6vw]' : (showHours ? 'text-2xl sm:text-4xl lg:text-5xl mx-0.5 sm:mx-1' : 'text-4xl sm:text-6xl lg:text-7xl mx-1 sm:mx-2')}`;
+  const colonClass = `font-mono font-bold flex items-center justify-center leading-none text-neutral-300 dark:text-neutral-700 self-center ${isZenMode ? 'text-[6vw]' : (showHours ? 'text-2xl sm:text-4xl lg:text-5xl mx-0.5 sm:mx-1' : 'text-4xl sm:text-6xl lg:text-7xl mx-1 sm:mx-2')}`;
 
   return (
-    <div className="h-full w-full flex flex-col bg-neutral-100 dark:bg-neutral-950 transition-colors relative">
+    <div className={`h-full w-full flex flex-col transition-colors relative ${isGlass ? 'bg-transparent' : 'bg-neutral-100 dark:bg-neutral-950'}`}>
       
       {/* Zen Toggle */}
       <button 

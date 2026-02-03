@@ -11,19 +11,19 @@ interface ClockViewProps {
 }
 
 // Extracted Separator to be a stable component
-const Separator = memo(({ isZenMode }: { isZenMode: boolean }) => (
+const Separator = memo(({ isZenMode, isTransparent }: { isZenMode: boolean; isTransparent: boolean }) => (
   <div className={`flex flex-col justify-center items-center opacity-80 transition-all duration-500
       ${isZenMode 
          ? 'gap-[3vw] mx-[0.5vw] lg:gap-[4vh]' 
          : 'gap-4 sm:gap-6 lg:gap-8 mx-1 sm:mx-2 lg:mx-3'
       }`}>
-      <div className={`rounded-full shadow-lg transition-all duration-500 bg-neutral-800 dark:bg-neutral-500/50 backdrop-blur-sm
+    <div className={`rounded-full shadow-lg transition-all duration-500 ${isTransparent ? 'bg-white/35 dark:bg-white/15 shadow-[0_0_12px_rgba(255,255,255,0.25)]' : 'bg-neutral-800 dark:bg-neutral-500/50'} backdrop-blur-sm
          ${isZenMode 
             ? 'w-[2vw] h-[2vw] lg:w-[1.5vh] lg:h-[1.5vh]' 
             : 'w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6' 
          }`} 
       />
-      <div className={`rounded-full shadow-lg transition-all duration-500 bg-neutral-800 dark:bg-neutral-500/50 backdrop-blur-sm
+    <div className={`rounded-full shadow-lg transition-all duration-500 ${isTransparent ? 'bg-white/35 dark:bg-white/15 shadow-[0_0_12px_rgba(255,255,255,0.25)]' : 'bg-neutral-800 dark:bg-neutral-500/50'} backdrop-blur-sm
          ${isZenMode 
             ? 'w-[2vw] h-[2vw] lg:w-[1.5vh] lg:h-[1.5vh]' 
             : 'w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 xl:w-6 xl:h-6' 
@@ -63,6 +63,18 @@ export const ClockView: React.FC<ClockViewProps> = ({ isZenMode, toggleZenMode, 
         }
     }
   };
+
+  useEffect(() => {
+    const handleHotkey = (event: Event) => {
+      const detail = (event as CustomEvent<{ action?: string }>).detail;
+      if (detail?.action === 'toggle-zen') {
+        handleToggle();
+      }
+    };
+
+    window.addEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+    return () => window.removeEventListener('chronoflip:hotkey', handleHotkey as EventListener);
+  }, [isZenMode]);
 
   // --- World Clock Logic ---
   // If timezone is 'local' or undefined, use system time. Otherwise, convert.
@@ -132,9 +144,9 @@ export const ClockView: React.FC<ClockViewProps> = ({ isZenMode, toggleZenMode, 
         {/* Clock Container */}
         <div className="flex items-center justify-center relative drop-shadow-2xl" aria-hidden="true">
             <FlipDigit key="hours" value={hours} label="Hours" isZenMode={isZenMode} appearance={appearance} />
-            <Separator isZenMode={isZenMode} />
+            <Separator isZenMode={isZenMode} isTransparent={Boolean(appearance?.transparentMode)} />
             <FlipDigit key="minutes" value={minutes} label="Minutes" isZenMode={isZenMode} appearance={appearance} />
-            <Separator isZenMode={isZenMode} />
+            <Separator isZenMode={isZenMode} isTransparent={Boolean(appearance?.transparentMode)} />
             <FlipDigit key="seconds" value={seconds} label="Seconds" isZenMode={isZenMode} appearance={appearance} />
             
             {/* AM/PM Indicator for 12h mode */}
@@ -157,8 +169,8 @@ export const ClockView: React.FC<ClockViewProps> = ({ isZenMode, toggleZenMode, 
         )}
         
         {/* Date Display */}
-        <div className={`mt-12 lg:mt-16 xl:mt-24 font-mono font-medium tracking-[0.22em] sm:tracking-[0.3em] lg:tracking-[0.4em] uppercase transition-all duration-500 text-center
-          ${isZenMode ? 'text-neutral-500/60 text-[2.5vw] lg:text-[1.5vh]' : 'text-neutral-500 dark:text-neutral-400 text-xs sm:text-base lg:text-lg'}`}>
+        <div className={`mt-12 lg:mt-16 xl:mt-24 font-mono font-medium tracking-[0.18em] sm:tracking-[0.24em] lg:tracking-[0.32em] uppercase transition-all duration-500 text-center
+          ${isZenMode ? 'text-neutral-500/60 text-[2.5vw] lg:text-[1.5vh]' : 'text-neutral-600 dark:text-neutral-400 text-xs sm:text-base lg:text-lg'}`}>
             {dateString}
         </div>
       </div>

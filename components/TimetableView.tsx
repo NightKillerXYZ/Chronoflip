@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { TimetableEntry, Alarm, SOUND_PRESETS, CustomSound } from '../types';
+import { TimetableEntry, Alarm, SOUND_PRESETS, CustomSound, AppearanceSettings } from '../types';
 import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
@@ -10,6 +10,7 @@ interface TimetableViewProps {
     alarms: Alarm[];
     setAlarms: (alarms: Alarm[]) => void;
     defaultSoundId: string;
+    appearance?: AppearanceSettings;
     // Custom Sound Props
     customSounds: CustomSound[];
     onUpload: (file: File) => void;
@@ -18,8 +19,9 @@ interface TimetableViewProps {
 }
 
 export const TimetableView: React.FC<TimetableViewProps> = ({ 
-    alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete 
+        alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete, appearance
 }) => {
+    const isGlass = Boolean(appearance?.transparentMode);
   const [entries, setEntries] = useLocalStorage<TimetableEntry[]>('timetable', [
     { id: '1', time: '09:00', activity: 'Morning Standup', notes: 'Discuss Q3 Goals' },
     { id: '2', time: '11:30', activity: 'Deep Work Session', notes: 'Focus on API Integration' },
@@ -189,13 +191,13 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       systemDefaultId: defaultSoundId
   };
 
-  return (
-    <div className="h-full p-6 md:p-10 max-w-5xl mx-auto w-full flex flex-col animate-fade-in overflow-y-auto custom-scrollbar relative">
+    return (
+        <div className="h-full p-6 md:p-10 max-w-5xl mx-auto w-full flex flex-col animate-fade-in overflow-y-auto custom-scrollbar relative">
        
        {/* Alarm Creation Modal */}
        {isAlarmModalOpen && (selectedEntryForAlarm || isBulkAlarmMode) && (
            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-               <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+               <div className={`${isGlass ? 'bg-neutral-100/55 dark:bg-neutral-900/50 border-white/20 dark:border-white/10' : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'} border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 backdrop-blur-2xl`}>
                    <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                            <Bell className="text-amber-500" /> {isBulkAlarmMode ? 'Set All Reminders' : 'Set Reminder'}
@@ -205,7 +207,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                        </button>
                    </div>
                    <div className="p-6 space-y-6">
-                       <div className="bg-neutral-50 dark:bg-neutral-950 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                       <div className={`${isGlass ? 'bg-neutral-100/50 dark:bg-neutral-900/45 border-white/20 dark:border-white/10' : 'bg-neutral-50 dark:bg-neutral-950 border-neutral-200 dark:border-neutral-800'} p-4 rounded-xl border`}>
                            {isBulkAlarmMode ? (
                                <>
                                 <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Bulk Action</div>
@@ -264,10 +266,10 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       </div>
 
       {/* List Container */}
-      <div className="flex-1 bg-white dark:bg-neutral-900/40 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-xl overflow-hidden flex flex-col">
+    <div className={`flex-1 rounded-3xl border shadow-xl overflow-hidden flex flex-col ${isGlass ? 'bg-neutral-100/55 dark:bg-neutral-900/50 border-white/20 dark:border-white/10 backdrop-blur-2xl' : 'bg-white dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800'}`}>
         
         {/* Desktop Headers */}
-        <div className="hidden md:flex bg-neutral-100 dark:bg-neutral-950/50 border-b border-neutral-200 dark:border-neutral-800 text-neutral-400 text-xs font-bold uppercase tracking-wider p-4">
+        <div className={`hidden md:flex border-b text-neutral-400 text-xs font-bold uppercase tracking-wider p-4 ${isGlass ? 'bg-neutral-100/45 dark:bg-neutral-900/45 border-white/20 dark:border-white/10' : 'bg-neutral-100 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'}`}>
             <div className="w-32 px-2 flex items-center gap-2"><Clock size={14}/> Time</div>
             <div className="flex-1 px-2 flex items-center gap-2"><FileText size={14}/> Activity</div>
             <div className="flex-1 px-2 flex items-center gap-2"><AlignLeft size={14}/> Notes</div>

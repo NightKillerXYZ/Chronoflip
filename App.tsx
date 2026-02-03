@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, AlarmClock, Timer as TimerIcon, Calendar, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Zap, Bell, MonitorX, Lock, AlertCircle, Watch, Settings, Palette, Type, Layout, RefreshCw, Globe, Search, Volume2, Sliders } from 'lucide-react';
+import { Clock, AlarmClock, Timer as TimerIcon, Calendar, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Zap, Bell, MonitorX, Lock, AlertCircle, Watch, Settings, Palette, Type, Layout, RefreshCw, Globe, Search, Volume2, Sliders, Droplet } from 'lucide-react';
 import { ViewState, Timer, Alarm, AppearanceSettings, DEFAULT_APPEARANCE, CustomSound } from './types';
 import { ClockView } from './components/ClockView';
 import { AlarmView } from './components/AlarmView';
@@ -64,6 +64,7 @@ const App: React.FC = () => {
   // Theme & Appearance Management
   const [isDarkMode, setIsDarkMode] = useLocalStorage('isDarkMode', true);
   const [appearance, setAppearance] = useLocalStorage<AppearanceSettings>('appearance', DEFAULT_APPEARANCE);
+  const isGlass = Boolean(appearance?.transparentMode);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'General' | 'Appearance' | 'Sound'>('Appearance');
   const [tzSearch, setTzSearch] = useState('');
@@ -172,6 +173,47 @@ const App: React.FC = () => {
         window.removeEventListener('touchstart', handleInteraction);
     };
   }, [requestWakeLock]); 
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      const tag = target.tagName.toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
+    };
+
+    const dispatchHotkey = (action: 'toggle-primary' | 'reset-primary' | 'toggle-zen') => {
+      window.dispatchEvent(new CustomEvent('chronoflip:hotkey', { detail: { action } }));
+    };
+
+    const handleHotkeys = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isEditableTarget(e.target)) return;
+
+      const key = e.key.toLowerCase();
+      const code = e.code;
+
+      if (e.code === 'Space' || key === ' ') {
+        e.preventDefault();
+        dispatchHotkey('toggle-primary');
+        return;
+      }
+
+      if (key === 'r' || code === 'KeyR') {
+        e.preventDefault();
+        dispatchHotkey('reset-primary');
+        return;
+      }
+
+      if (key === 'z' || code === 'KeyZ') {
+        e.preventDefault();
+        dispatchHotkey('toggle-zen');
+      }
+    };
+
+    window.addEventListener('keydown', handleHotkeys);
+    return () => window.removeEventListener('keydown', handleHotkeys);
+  }, []);
 
   // --- LOGIC: ALARMS ---
   useEffect(() => {
@@ -409,9 +451,10 @@ const App: React.FC = () => {
         break;
       case ViewState.ALARM: 
         content = <AlarmView 
-            alarms={alarms} 
+            alarms={alarms}
             setAlarms={setAlarms} 
             defaultSoundId={appearance.defaultSoundId || DEFAULT_APPEARANCE.defaultSoundId}
+            appearance={appearance}
             {...soundProps}
         />;
         break;
@@ -439,6 +482,7 @@ const App: React.FC = () => {
             alarms={alarms} 
             setAlarms={setAlarms} 
             defaultSoundId={appearance.defaultSoundId || DEFAULT_APPEARANCE.defaultSoundId}
+            appearance={appearance}
             {...soundProps}
         />;
         break;
@@ -597,6 +641,26 @@ const App: React.FC = () => {
                         </button>
                     </div>
 
+                        {/* Transparent Clock */}
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-bold uppercase text-neutral-500 tracking-wider">
+                            <Droplet size={16} /> Transparent Clock
+                          </div>
+                          <button 
+                            onClick={() => setAppearance({ ...appearance, transparentMode: !appearance.transparentMode })}
+                            className={`flex items-center justify-between w-full p-4 rounded-xl transition-all duration-300 border shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
+                            appearance.transparentMode 
+                              ? 'bg-white/60 dark:bg-white/10 border-white/30 dark:border-white/10 text-neutral-900 dark:text-white' 
+                              : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300'
+                            }`}
+                          >
+                            <span className="font-bold">iOS 26 Glass</span>
+                            <div className={`w-12 h-6 rounded-full relative transition-colors ${appearance.transparentMode ? 'bg-amber-500' : 'bg-neutral-300'}`}>
+                              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${appearance.transparentMode ? 'left-7' : 'left-1'}`} />
+                            </div>
+                          </button>
+                        </div>
+
                     {/* Card Shape */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-sm font-bold uppercase text-neutral-500 tracking-wider">
@@ -690,7 +754,14 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors duration-500 font-sans relative 
-        ${appearance.isCustom && appearance.backgroundColor !== 'auto' ? '' : 'bg-neutral-100 dark:bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-950 dark:to-black'}`}>
+        ${appearance.isCustom && appearance.backgroundColor !== 'auto' ? '' : (
+            isGlass
+              ? 'bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-100/65 via-white/35 to-neutral-200/30 dark:from-neutral-900/75 dark:via-black/65 dark:to-black'
+              : 'bg-neutral-100 dark:bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white via-neutral-100 to-neutral-200 dark:from-neutral-800 dark:via-neutral-950 dark:to-black'
+        )}`}>
+      {isGlass && (
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-white/28 via-transparent to-transparent dark:from-white/8 opacity-55" />
+      )}
       
       {activeAlertId && (
         <div role="alertdialog" aria-modal="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-in fade-in zoom-in duration-300">
@@ -708,10 +779,10 @@ const App: React.FC = () => {
       {/* Settings Modal */}
       {isSettingsOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in">
-            <div className="bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col md:flex-row max-h-[90vh] h-full overflow-hidden animate-in zoom-in-95">
+            <div className={`${isGlass ? 'bg-neutral-100/58 dark:bg-neutral-900/52 border-white/18 dark:border-white/10' : 'bg-white/90 dark:bg-neutral-900/90 border-neutral-200 dark:border-neutral-800'} backdrop-blur-2xl border w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col md:flex-row max-h-[90vh] h-full overflow-hidden animate-in zoom-in-95`}>
                 
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-neutral-50/50 dark:bg-black/20 border-b md:border-b-0 md:border-r border-neutral-200 dark:border-neutral-800 p-4 flex flex-col">
+                <div className={`${isGlass ? 'bg-neutral-100/52 dark:bg-neutral-900/48 border-white/18 dark:border-white/10' : 'bg-neutral-50/50 dark:bg-black/20 border-neutral-200 dark:border-neutral-800'} w-full md:w-64 border-b md:border-b-0 md:border-r p-4 flex flex-col backdrop-blur-2xl`}>
                      <div className="flex items-center justify-between md:mb-6">
                         <h3 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
                              <Sliders size={20} className="text-amber-500" /> Settings
@@ -750,7 +821,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 flex flex-col min-h-0 bg-white/50 dark:bg-neutral-900/50 relative">
+                <div className={`${isGlass ? 'bg-neutral-100/48 dark:bg-neutral-900/42' : 'bg-white/50 dark:bg-neutral-900/50'} flex-1 flex flex-col min-h-0 relative backdrop-blur-2xl`}>
                      <button onClick={() => setIsSettingsOpen(false)} className="absolute top-4 right-4 hidden md:block text-neutral-400 hover:text-neutral-900 dark:hover:text-white z-10">
                         <X size={24} />
                     </button>
@@ -787,8 +858,8 @@ const App: React.FC = () => {
       {/* Sidebar - Glassmorphism Style */}
       <div className={`
         fixed md:relative z-40 h-full 
-        bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl 
-        border-r border-white/20 dark:border-white/5 
+        ${isGlass ? 'bg-neutral-100/52 dark:bg-neutral-900/50 border-white/18 dark:border-white/10' : 'bg-white/80 dark:bg-neutral-950/80 border-white/20 dark:border-white/5'} backdrop-blur-2xl 
+        border-r 
         transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) flex flex-col shadow-2xl md:shadow-none
         ${isZenMode ? '-translate-x-full w-0 opacity-0 overflow-hidden' : (isSidebarOpen ? 'w-72 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-24')}
       `}>

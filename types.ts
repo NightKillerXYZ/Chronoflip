@@ -55,6 +55,7 @@ export interface AppearanceSettings {
   cardColor: string; // hex
   backgroundColor: string; // hex (overrides theme if set, 'auto' uses theme)
   isCustom: boolean; // if false, use standard Light/Dark themes
+  transparentMode?: boolean; // iOS-style glass clock
   timezone: string; // IANA timezone string (e.g. 'America/New_York')
   locationLabel: string; // Display name (e.g. 'New York')
   defaultSoundId: string; 
@@ -67,6 +68,7 @@ export const DEFAULT_APPEARANCE: AppearanceSettings = {
   cardColor: 'auto',
   backgroundColor: 'auto',
   isCustom: false,
+  transparentMode: false,
   timezone: 'local',
   locationLabel: 'Local Time',
   defaultSoundId: 'radar',
