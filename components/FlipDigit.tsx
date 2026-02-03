@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, memo } from 'react';
+import React, { useEffect, useState, memo, useRef } from 'react';
 import { AppearanceSettings } from '../types';
 
 interface FlipDigitProps {
@@ -24,29 +24,64 @@ export const FlipDigit = memo(({
   const [displayValue, setDisplayValue] = useState(value);
   const [nextValue, setNextValue] = useState(value);
   const [isFlipping, setIsFlipping] = useState(false);
+  const flipTimeoutRef = useRef<number | null>(null);
+  const isFlippingRef = useRef(false);
+  const nextValueRef = useRef(value);
 
   // Helper to ensure 2 digits
   const format = (val: string | number) => val.toString().padStart(2, '0');
 
   useEffect(() => {
+    isFlippingRef.current = isFlipping;
+  }, [isFlipping]);
+
+  useEffect(() => {
+    nextValueRef.current = nextValue;
+  }, [nextValue]);
+
+  useEffect(() => {
     // If in fast mode, just update directly without flip state
     if (variant === 'fast') {
       setDisplayValue(value);
+      setNextValue(value);
       return;
     }
 
-    if (value !== nextValue) {
-        if (isFlipping) {
-            setDisplayValue(nextValue); 
-        }
-        setNextValue(value);
-        setIsFlipping(true);
+    if (value === nextValueRef.current) return;
+
+    // If an animation is already running, finish it before starting a new one
+    if (isFlippingRef.current) {
+      setDisplayValue(nextValueRef.current);
     }
-  }, [value, nextValue, isFlipping, variant]);
+
+    setNextValue(value);
+    setIsFlipping(false);
+
+    const rafId = requestAnimationFrame(() => setIsFlipping(true));
+
+    if (flipTimeoutRef.current) {
+      window.clearTimeout(flipTimeoutRef.current);
+    }
+
+    flipTimeoutRef.current = window.setTimeout(() => {
+      setDisplayValue(value);
+      setIsFlipping(false);
+    }, 650);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (flipTimeoutRef.current) {
+        window.clearTimeout(flipTimeoutRef.current);
+      }
+    };
+  }, [value, variant]);
 
   const handleAnimationEnd = () => {
     setDisplayValue(nextValue);
     setIsFlipping(false);
+    if (flipTimeoutRef.current) {
+      window.clearTimeout(flipTimeoutRef.current);
+    }
   };
 
   // --- Styles & Dimensions ---
@@ -65,7 +100,7 @@ export const FlipDigit = memo(({
 
   const labelClass = isZenMode
     ? "hidden"
-    : "text-[10px] sm:text-xs xl:text-sm font-bold text-neutral-400 dark:text-neutral-500 tracking-[0.3em] uppercase opacity-70 whitespace-nowrap";
+    : "text-[11px] sm:text-sm xl:text-base font-bold text-neutral-400 dark:text-neutral-500 tracking-[0.28em] uppercase opacity-70 whitespace-nowrap";
     
   const spacingClass = isZenMode ? "mx-[1vw] lg:mx-[1.5vw]" : "mx-1.5 sm:mx-3 md:mx-4 lg:mx-5";
 
@@ -110,7 +145,7 @@ export const FlipDigit = memo(({
      return (
        <div className={`flex flex-col items-center ${spacingClass} group select-none`}>
          <div 
-           className={`relative ${containerClass} ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20`}
+           className={`relative ${containerClass} ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
            role="img" 
            aria-label={value.toString()}
          >
@@ -137,7 +172,7 @@ export const FlipDigit = memo(({
   return (
     <div className={`flex flex-col items-center ${spacingClass} group select-none`}>
       <div 
-        className={`relative ${containerClass} perspective-1000 ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20`}
+        className={`relative ${containerClass} perspective-1000 ${radiusFull} shadow-2xl bg-neutral-900/10 dark:bg-black/20 transition-transform duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.2)] active:scale-[0.99]`}
         role="img" 
         aria-label={value.toString()}
       >

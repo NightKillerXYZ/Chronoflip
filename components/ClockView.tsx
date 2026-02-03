@@ -139,26 +139,26 @@ export const ClockView: React.FC<ClockViewProps> = ({ isZenMode, toggleZenMode, 
             
             {/* AM/PM Indicator for 12h mode */}
             {is12Hour && (
-                <div className={`absolute font-black tracking-widest text-neutral-300 dark:text-neutral-600
-                    ${isZenMode 
-                        ? 'text-[3vw] -right-[8vw] bottom-[5vh]' 
-                        : 'text-2xl xl:text-4xl -right-16 xl:-right-24 bottom-12 xl:bottom-20 hidden xl:block'
-                    }`}>
-                    {ampm}
-                </div>
+              <div className={`absolute font-black tracking-widest text-neutral-300 dark:text-neutral-600
+                ${isZenMode 
+                  ? 'text-[3vw] -right-[8vw] bottom-[5vh]' 
+                  : 'hidden sm:block text-base sm:text-xl lg:text-3xl -right-10 sm:-right-12 lg:-right-16 bottom-6 sm:bottom-8 lg:bottom-10'
+                }`}>
+                {ampm}
+              </div>
             )}
         </div>
         
         {/* Mobile AM/PM Indicator */}
         {is12Hour && !isZenMode && (
-             <div className="mt-8 text-2xl font-black tracking-widest text-neutral-300 dark:text-neutral-600 xl:hidden">
-                 {ampm}
-             </div>
+           <div className="mt-8 text-xl font-black tracking-widest text-neutral-300 dark:text-neutral-600 sm:hidden">
+             {ampm}
+           </div>
         )}
         
         {/* Date Display */}
-        <div className={`mt-12 lg:mt-16 xl:mt-24 font-mono font-medium tracking-[0.4em] uppercase transition-all duration-500 text-center
-            ${isZenMode ? 'text-neutral-500/60 text-[2.5vw] lg:text-[1.5vh]' : 'text-neutral-500 dark:text-neutral-400 text-xs sm:text-base lg:text-lg'}`}>
+        <div className={`mt-12 lg:mt-16 xl:mt-24 font-mono font-medium tracking-[0.22em] sm:tracking-[0.3em] lg:tracking-[0.4em] uppercase transition-all duration-500 text-center
+          ${isZenMode ? 'text-neutral-500/60 text-[2.5vw] lg:text-[1.5vh]' : 'text-neutral-500 dark:text-neutral-400 text-xs sm:text-base lg:text-lg'}`}>
             {dateString}
         </div>
       </div>

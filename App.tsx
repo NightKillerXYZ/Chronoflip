@@ -465,10 +465,10 @@ const App: React.FC = () => {
         }}
         aria-label={label}
         aria-current={isActive ? 'page' : undefined}
-        className={`w-full flex items-center px-6 py-4 transition-all duration-300 group relative
+        className={`w-full flex items-center px-6 py-4 transition-all duration-300 group relative rounded-xl
           ${isActive 
-            ? 'text-amber-500 dark:text-amber-400' 
-            : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
+            ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/10' 
+            : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100/80 dark:hover:bg-neutral-900/40'
           } ${!isSidebarOpen ? 'justify-center md:px-2' : 'gap-4'}`}
       >
         {/* Active Indicator Glow */}
