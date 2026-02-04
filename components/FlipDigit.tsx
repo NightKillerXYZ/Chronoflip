@@ -11,10 +11,10 @@ interface FlipDigitProps {
   appearance?: AppearanceSettings;
   variant?: 'default' | 'fast'; // 'fast' disables 3D flip for rapid updates (e.g. stopwatch ms)
 }
-  const labelClass = isZenMode
-    ? "hidden"
-    : `text-[11px] sm:text-sm xl:text-base font-bold tracking-[0.22em] uppercase opacity-70 whitespace-nowrap ${
-  label, 
+
+export const FlipDigit = memo(({
+  value,
+  label,
   isZenMode = false,
   cardClassName,
   textClassName,
