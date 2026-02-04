@@ -110,9 +110,8 @@ interface FlipDigitProps {
 
   const labelClass = isZenMode
     ? "hidden"
-    : `text-[11px] sm:text-sm xl:text-base font-bold tracking-[0.22em] uppercase opacity-70 whitespace-nowrap ${
-        isTransparent ? 'text-white/70 dark:text-white/60' : 'text-neutral-400 dark:text-neutral-500'
-      }`;
+    : "text-[11px] sm:text-sm xl:text-base font-bold tracking-[0.22em] uppercase opacity-70 whitespace-nowrap " +
+      (isTransparent ? 'text-white/70 dark:text-white/60' : 'text-neutral-400 dark:text-neutral-500');
 
   const cardBgClass = (appearance?.isCustom && appearance.cardColor !== 'auto')
     ? ''
