@@ -160,10 +160,10 @@ export const FlipDigit = memo(({
 
   const numberClass = "absolute left-0 right-0 w-full h-[200%] flex items-center justify-center font-mono font-bold leading-none z-10 " + fontSizeClass + " " + textColorClass;
 
-  const topHighlightOpacity = isTransparent ? 'opacity-35' : 'opacity-50';
-  const bottomShadowOpacity = isTransparent ? 'opacity-22' : 'opacity-30';
-  const flipperHighlightOpacity = isTransparent ? 'opacity-40' : 'opacity-80';
-  const flipperShadowOpacity = isTransparent ? 'opacity-40' : 'opacity-80';
+  const topHighlightOpacity = isTransparent ? 'opacity-40' : 'opacity-50';
+  const bottomShadowOpacity = isTransparent ? 'opacity-30' : 'opacity-30';
+  const flipperHighlightOpacity = isTransparent ? 'opacity-50' : 'opacity-80';
+  const flipperShadowOpacity = isTransparent ? 'opacity-50' : 'opacity-80';
   const topInsetShadow = isTransparent ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]' : 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]';
   const flipperTopInset = isTransparent ? 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.04)]' : 'shadow-[inset_0_1px_2px_rgba(255,255,255,0.1)]';
   const flipperBottomInset = isTransparent ? 'shadow-[inset_0_-1px_2px_rgba(0,0,0,0.08)]' : 'shadow-[inset_0_-1px_2px_rgba(0,0,0,0.2)]';
@@ -251,7 +251,7 @@ export const FlipDigit = memo(({
         {isTransparent && (
           <div className={`absolute inset-0 ${radiusFull} pointer-events-none bg-gradient-to-br from-white/25 via-white/5 to-transparent`} />
         )}
-        <div className={`absolute top-1/2 left-0 right-0 h-px z-20 ${centerLineClass} shadow-[0_1px_0_rgba(255,255,255,0.1)]`}></div>
+        <div className={`absolute top-1/2 left-0 right-0 h-px z-20 ${centerLineClass} shadow-[0_1px_0_rgba(255,255,255,0.1)] ${isFlipping ? 'animate-seam-glow' : ''}`}></div>
         <div className={`absolute top-1/2 -left-[1px] -translate-y-1/2 h-3 w-[3px] z-20 rounded-r-full ${isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/25 dark:bg-white/10'}`}></div>
         <div className={`absolute top-1/2 -right-[1px] -translate-y-1/2 h-3 w-[3px] z-20 rounded-l-full ${isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/25 dark:bg-white/10'}`}></div>
         

@@ -28,6 +28,7 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'Presets' | 'Custom'>('Presets');
   const [previewId, setPreviewId] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
   
   // Renaming State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,8 +47,10 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+                setIsUploading(true);
         onUpload(file);
         setActiveTab('Custom');
+                window.setTimeout(() => setIsUploading(false), 700);
     }
   };
 
@@ -220,14 +223,15 @@ export const SoundPicker: React.FC<SoundPickerProps> = ({
         ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 dark:text-neutral-600 py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-800 rounded-xl mb-4">
                 <Music size={40} className="mb-2 opacity-20" aria-hidden="true" />
-                <p className="text-sm">No custom sounds yet</p>
+                <p className="text-sm font-medium">No custom sounds yet</p>
+                <p className="text-xs mt-1 opacity-70">Upload one to personalize alerts.</p>
             </div>
         )}
         
-        <label className="mt-auto flex items-center justify-center gap-2 w-full py-4 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white rounded-xl cursor-pointer transition-colors border border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500 focus-within:ring-2 focus-within:ring-amber-500">
+        <label className={`mt-auto flex items-center justify-center gap-2 w-full py-4 rounded-xl transition-colors border focus-within:ring-2 focus-within:ring-amber-500 ${isUploading ? 'bg-neutral-100/70 dark:bg-neutral-800/60 text-neutral-400 cursor-wait border-neutral-200 dark:border-neutral-700' : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white cursor-pointer border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-500'}`} aria-busy={isUploading}>
             <Upload size={20} aria-hidden="true" />
-            <span className="font-bold text-sm">Upload Audio (.mp3, .wav)</span>
-            <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
+            <span className="font-bold text-sm">{isUploading ? 'Uploading…' : 'Upload Audio (.mp3, .wav)'}</span>
+            <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" disabled={isUploading} />
         </label>
         <p className="text-center text-[10px] text-neutral-400 dark:text-neutral-500 mt-2">Max playback: 20 seconds. Stored locally in your browser.</p>
       </div>

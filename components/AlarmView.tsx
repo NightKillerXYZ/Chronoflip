@@ -271,9 +271,10 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
         {/* List Section */}
         <div className="space-y-4 pb-20" role="list">
             {alarms.length === 0 && (
-            <div className={`flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 italic border-2 border-dashed rounded-2xl ${isGlass ? 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5' : 'border-neutral-200 dark:border-neutral-800'}`}>
+            <div className={`flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 border-2 border-dashed rounded-2xl ${isGlass ? 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5' : 'border-neutral-200 dark:border-neutral-800'}`}>
                 <BellOff size={48} className="mb-4 opacity-20" aria-hidden="true" />
-                <p>No active alarms</p>
+                <p className="font-medium">No alarms yet</p>
+                <p className="text-xs mt-2 opacity-70">Add one to get precise alerts right on time.</p>
             </div>
             )}
             {alarms.map(alarm => (

@@ -62,7 +62,8 @@ const App: React.FC = () => {
   const [isZenMode, setZenMode] = useState(false);
   
   // Theme & Appearance Management
-  const [isDarkMode, setIsDarkMode] = useLocalStorage('isDarkMode', true);
+  const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+  const [isDarkMode, setIsDarkMode] = useLocalStorage('isDarkMode', prefersDark);
   const [appearance, setAppearance] = useLocalStorage<AppearanceSettings>('appearance', DEFAULT_APPEARANCE);
   const isGlass = Boolean(appearance?.transparentMode);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -173,6 +174,16 @@ const App: React.FC = () => {
         window.removeEventListener('touchstart', handleInteraction);
     };
   }, [requestWakeLock]); 
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = window.localStorage.getItem('isDarkMode');
+    if (stored !== null) return;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event: MediaQueryListEvent) => setIsDarkMode(event.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, [setIsDarkMode]);
 
   useEffect(() => {
     const isEditableTarget = (target: EventTarget | null) => {
@@ -625,6 +636,8 @@ const App: React.FC = () => {
                         </div>
                         <button 
                             onClick={toggleTheme}
+                          aria-label="Toggle theme"
+                          aria-pressed={isDarkMode}
                             className={`flex items-center justify-between w-full p-4 rounded-xl transition-all duration-300 border shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
                             isDarkMode 
                                 ? 'bg-neutral-900 border-neutral-800 text-white hover:bg-neutral-800' 
@@ -648,6 +661,8 @@ const App: React.FC = () => {
                           </div>
                           <button 
                             onClick={() => setAppearance({ ...appearance, transparentMode: !appearance.transparentMode })}
+                            aria-label="Toggle glass theme"
+                            aria-pressed={Boolean(appearance.transparentMode)}
                             className={`flex items-center justify-between w-full p-4 rounded-xl transition-all duration-300 border shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
                             appearance.transparentMode 
                               ? 'bg-white/60 dark:bg-white/10 border-white/30 dark:border-white/10 text-neutral-900 dark:text-white' 
@@ -898,10 +913,16 @@ const App: React.FC = () => {
            </button>
 
            {renderWakeLockStatus()}
+
+           {isSidebarOpen && (
+               <div className="text-center text-[10px] text-neutral-400 dark:text-neutral-600 font-mono tracking-widest uppercase opacity-60">
+                 Shortcuts: Space • R • Z
+               </div>
+           )}
            
            {isSidebarOpen && (
                <div className="text-center">
-                   <span className="text-[10px] text-neutral-400 dark:text-neutral-600 font-mono tracking-widest uppercase opacity-60">v1.3.1</span>
+                   <span className="text-[10px] text-neutral-400 dark:text-neutral-600 font-mono tracking-widest uppercase opacity-60">v2.0.0</span>
                </div>
            )}
         </div>
