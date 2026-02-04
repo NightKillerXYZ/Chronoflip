@@ -654,7 +654,7 @@ const App: React.FC = () => {
                               : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300'
                             }`}
                           >
-                            <span className="font-bold">iOS 26 Glass</span>
+                            <span className="font-bold">Aurora Glass</span>
                             <div className={`w-12 h-6 rounded-full relative transition-colors ${appearance.transparentMode ? 'bg-amber-500' : 'bg-neutral-300'}`}>
                               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${appearance.transparentMode ? 'left-7' : 'left-1'}`} />
                             </div>
