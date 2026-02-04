@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'chronoflip-v3';
+const CACHE_NAME = 'chronoflip-v4';
 
 // Files to cache immediately (The "App Shell")
 // NOTE: We only cache raw assets here. 
@@ -43,43 +43,29 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Handle requests
+  const { request } = event;
+
+  if (request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(request)
+        .then((response) => {
+          if (!response || response.status !== 200) return response;
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
           return response;
-        }
-
-        // Clone the request because it's a stream and can only be consumed once
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          (response) => {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              // Note: 'basic' type means it's a request from our origin. 
-              // External requests (like Google Fonts) might be 'cors' or 'opaque'.
-              // We return them but don't necessarily cache them blindly here.
-              return response;
-            }
-
-            // We only want to cache GET requests
-            if (event.request.method !== 'GET') {
-                return response;
-            }
-
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                  cache.put(event.request, responseToCache);
-              });
-
-            return response;
+        })
+        .catch(() => {
+          if (request.mode === 'navigate') {
+            return caches.match('/index.html');
           }
-        );
-      })
+          return caches.match('/index.html');
+        });
+    })
   );
 });
