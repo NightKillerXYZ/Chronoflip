@@ -152,10 +152,9 @@ interface FlipDigitProps {
   const highlightGradient = "bg-gradient-to-b from-white/20 to-transparent"; 
   const shadowGradient = "bg-gradient-to-t from-black/30 to-transparent";    
 
-  const topBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/10 dark:border-black/50';
-    const topBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/10 dark:border-black/40';
-    const bottomBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-white/20 dark:border-white/8';
-    const centerLineClass = isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/35 dark:bg-black/70';
+  const topBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-black/10 dark:border-black/40';
+  const bottomBorderClass = isTransparent ? 'border-white/20 dark:border-white/10' : 'border-white/20 dark:border-white/8';
+  const centerLineClass = isTransparent ? 'bg-white/20 dark:bg-white/10' : 'bg-black/35 dark:bg-black/70';
   const containerBgClass = isTransparent ? 'bg-white/15 dark:bg-black/25 backdrop-blur-xl' : 'bg-neutral-900/10 dark:bg-black/20';
   const glassRingClass = isTransparent ? 'ring-1 ring-white/20 dark:ring-white/10' : '';
 
