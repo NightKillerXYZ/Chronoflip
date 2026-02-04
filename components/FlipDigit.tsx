@@ -158,7 +158,7 @@ interface FlipDigitProps {
   const containerBgClass = isTransparent ? 'bg-white/15 dark:bg-black/25 backdrop-blur-xl' : 'bg-neutral-900/10 dark:bg-black/20';
   const glassRingClass = isTransparent ? 'ring-1 ring-white/20 dark:ring-white/10' : '';
 
-  const numberClass = `absolute left-0 right-0 w-full h-[200%] flex items-center justify-center font-mono font-bold leading-none z-10 ${fontSizeClass} ${textColorClass}`;
+  const numberClass = "absolute left-0 right-0 w-full h-[200%] flex items-center justify-center font-mono font-bold leading-none z-10 " + fontSizeClass + " " + textColorClass;
 
   const topHighlightOpacity = isTransparent ? 'opacity-35' : 'opacity-50';
   const bottomShadowOpacity = isTransparent ? 'opacity-22' : 'opacity-30';
