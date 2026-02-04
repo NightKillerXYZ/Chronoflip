@@ -1,0 +1,9 @@
+/* Global styles (kept minimal to satisfy build) */
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+}
