@@ -354,7 +354,7 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                             aria-label={`${group.alarms.every(alarm => alarm.active) ? 'Turn off' : 'Turn on'} all alarms in ${group.name}`}
                             className={`relative h-6 w-11 rounded-full transition-colors ${group.alarms.every(alarm => alarm.active) ? 'bg-amber-500' : 'bg-neutral-300 dark:bg-neutral-700'}`}
                         >
-                            <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${group.alarms.every(alarm => alarm.active) ? 'translate-x-6' : 'translate-x-1'}`} />
+                            <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${group.alarms.every(alarm => alarm.active) ? 'translate-x-5' : 'translate-x-0'}`} />
                         </button>
                         <ChevronDown size={18} className={`shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.id) ? 'rotate-180' : ''}`} />
                     </span>
