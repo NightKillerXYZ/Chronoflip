@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Bell, BellOff, Pencil, X, Check, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, Bell, BellOff, Pencil, X, Check, CalendarDays, ChevronDown } from 'lucide-react';
 import { Alarm, CustomSound, AppearanceSettings } from '../types';
 import { WheelPicker } from './WheelPicker';
 import { SoundPicker } from './SoundPicker';
@@ -46,6 +46,8 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
   const [editDays, setEditDays] = useState<number[]>([]);
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set(['other']));
+  const [alarmSection, setAlarmSection] = useState<'timetable' | 'other'>('other');
 
   const toggleDay = (dayIndex: number, isEdit: boolean) => {
       const current = isEdit ? editDays : selectedDays;
@@ -126,6 +128,28 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
       if (days.length === 2 && days.includes(0) && days.includes(6)) return 'Weekends';
       if (days.length === 5 && !days.includes(0) && !days.includes(6)) return 'Weekdays';
       return days.map(d => FULL_DAYS[d].slice(0, 3)).join(', ');
+  };
+
+  const alarmGroups = [
+      { id: 'other', name: 'Other alarms', alarms: alarms.filter(alarm => !alarm.timetableId) },
+      ...Array.from(new Map(
+          alarms
+              .filter(alarm => alarm.timetableId)
+              .map(alarm => [alarm.timetableId!, {
+                  id: alarm.timetableId!,
+                  name: alarm.timetableName || 'Timetable',
+                  alarms: alarms.filter(item => item.timetableId === alarm.timetableId)
+              }])
+      ).values())
+  ];
+
+  const toggleGroup = (groupId: string) => {
+      setOpenGroups(current => {
+          const next = new Set(current);
+          if (next.has(groupId)) next.delete(groupId);
+          else next.add(groupId);
+          return next;
+      });
   };
 
   useEffect(() => {
@@ -269,7 +293,25 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
         </div>
 
         {/* List Section */}
-        <div className="space-y-4 pb-20" role="list">
+        <div className="mb-4 flex rounded-xl border border-neutral-200 bg-neutral-100 p-1 dark:border-neutral-800 dark:bg-neutral-950" role="tablist" aria-label="Alarm sections">
+            <button
+                onClick={() => setAlarmSection('other')}
+                role="tab"
+                aria-selected={alarmSection === 'other'}
+                className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${alarmSection === 'other' ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-800 dark:text-white' : 'text-neutral-500'}`}
+            >
+                Other alarms
+            </button>
+            <button
+                onClick={() => setAlarmSection('timetable')}
+                role="tab"
+                aria-selected={alarmSection === 'timetable'}
+                className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-bold transition-all ${alarmSection === 'timetable' ? 'bg-amber-500 text-black shadow-sm' : 'text-neutral-500'}`}
+            >
+                Timetables
+            </button>
+        </div>
+        <div className="space-y-3 pb-20" role="list">
             {alarms.length === 0 && (
             <div className={`flex flex-col items-center justify-center h-48 text-neutral-400 dark:text-neutral-600 border-2 border-dashed rounded-2xl ${isGlass ? 'border-white/20 dark:border-white/10 bg-white/10 dark:bg-white/5' : 'border-neutral-200 dark:border-neutral-800'}`}>
                 <BellOff size={48} className="mb-4 opacity-20" aria-hidden="true" />
@@ -277,8 +319,26 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                 <p className="text-xs mt-2 opacity-70">Add one to get precise alerts right on time.</p>
             </div>
             )}
-            {alarms.map(alarm => (
-            <div key={alarm.id} role="listitem" className={`p-4 sm:p-5 rounded-2xl border flex items-center justify-between group transition-all shadow-sm hover:shadow-md ${isGlass ? 'bg-white/25 dark:bg-white/8 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/12' : 'bg-white dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:border-amber-500/30 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
+            {alarmGroups
+            .filter(group => alarmSection === 'other' ? group.id === 'other' : group.id !== 'other')
+            .filter(group => group.alarms.length > 0)
+            .map(group => (
+            <section key={group.id} className={`${isGlass ? 'bg-white/10 dark:bg-white/5 border-white/20 dark:border-white/10' : 'bg-neutral-50/70 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} rounded-2xl border overflow-hidden`}>
+                <button
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={openGroups.has(group.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-neutral-100/70 dark:hover:bg-neutral-900/70"
+                >
+                    <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-200">{group.name}</span>
+                        <span className="block text-xs text-neutral-400">{group.alarms.length} {group.alarms.length === 1 ? 'alarm' : 'alarms'}</span>
+                    </span>
+                    <ChevronDown size={18} className={`shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.id) ? 'rotate-180' : ''}`} />
+                </button>
+                {openGroups.has(group.id) && (
+                <div className="space-y-2 border-t border-neutral-200 p-2 dark:border-neutral-800" role="group" aria-label={group.name}>
+                {group.alarms.map(alarm => (
+            <div key={alarm.id} role="listitem" className={`p-4 sm:p-5 rounded-xl border flex items-center justify-between group transition-all shadow-sm hover:shadow-md ${isGlass ? 'bg-white/25 dark:bg-white/8 border-white/20 dark:border-white/10 hover:bg-white/30 dark:hover:bg-white/12' : 'bg-white dark:bg-neutral-900/60 border-neutral-200 dark:border-neutral-800 hover:border-amber-500/30 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
                 <div className="flex items-center gap-4 sm:gap-6">
                 <button 
                     onClick={() => toggleAlarm(alarm.id)}
@@ -326,6 +386,10 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                     </button>
                 </div>
             </div>
+                ))}
+                </div>
+                )}
+            </section>
             ))}
         </div>
       </div>

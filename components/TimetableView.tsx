@@ -255,7 +255,9 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               label: entry.activity || 'Timetable Task',
               active: true,
               soundId: selectedAlarmSound,
-              days: selectedSchedule.days
+              days: selectedSchedule.days,
+              timetableId: selectedSchedule.id,
+              timetableName: selectedSchedule.name
           }));
 
           setAlarms([...alarms, ...newAlarms]);
@@ -273,7 +275,9 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               label: selectedEntryForAlarm.activity || 'Timetable Reminder',
               active: true,
               soundId: selectedAlarmSound,
-              days: selectedSchedule.days
+              days: selectedSchedule.days,
+              timetableId: selectedSchedule.id,
+              timetableName: selectedSchedule.name
           };
           setAlarms([...alarms, newAlarm]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);

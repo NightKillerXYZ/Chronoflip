@@ -6,6 +6,8 @@ export interface Alarm {
   active: boolean;
   soundId: string;
   days: number[]; // 0 = Sunday, 1 = Monday, etc. Empty = One time only.
+  timetableId?: string;
+  timetableName?: string;
   lastTriggered?: number; // Timestamp to prevent duplicate triggers
 }
 
