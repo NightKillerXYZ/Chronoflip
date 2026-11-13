@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { TimetableEntry, TimetableSchedule, Alarm, SOUND_PRESETS, CustomSound, AppearanceSettings } from '../types';
-import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing, CalendarDays } from 'lucide-react';
+import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing, CalendarDays, ChevronDown, Settings2 } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
 import mammoth from 'mammoth';
@@ -109,7 +109,11 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
     const isGlass = Boolean(appearance?.transparentMode);
   const [schedules, setSchedules] = useLocalStorage<TimetableSchedule[]>('timetable-schedules', [defaultSchedule]);
   const [selectedScheduleId, setSelectedScheduleId] = useState(defaultSchedule.id);
-  const [newScheduleName, setNewScheduleName] = useState('');
+  const [isScheduleMenuOpen, setIsScheduleMenuOpen] = useState(false);
+  const [isScheduleConfigOpen, setIsScheduleConfigOpen] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [scheduleNameDraft, setScheduleNameDraft] = useState('');
+  const [scheduleDaysDraft, setScheduleDaysDraft] = useState<number[]>([]);
   const selectedSchedule = schedules.find(schedule => schedule.id === selectedScheduleId) || schedules[0] || defaultSchedule;
   const entries = selectedSchedule.entries;
 
@@ -169,31 +173,53 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
     }
   };
 
-  const createSchedule = () => {
-      const name = newScheduleName.trim();
-      if (!name) return;
-      const schedule: TimetableSchedule = {
-          id: `schedule-${Date.now()}`,
-          name,
-          days: [],
-          entries: []
-      };
-      setSchedules([...schedules, schedule]);
-      setSelectedScheduleId(schedule.id);
-      setNewScheduleName('');
+  const openScheduleConfig = (schedule?: TimetableSchedule) => {
+      setEditingScheduleId(schedule?.id || null);
+      setScheduleNameDraft(schedule?.name || '');
+      setScheduleDaysDraft(schedule?.days || []);
+      setIsScheduleMenuOpen(false);
+      setIsScheduleConfigOpen(true);
   };
 
-  const updateSchedule = (field: keyof TimetableSchedule, value: string | number[]) => {
-      setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
-          ? { ...schedule, [field]: value }
-          : schedule));
+  const saveScheduleConfig = () => {
+      const name = scheduleNameDraft.trim();
+      if (!name) return;
+
+      if (editingScheduleId) {
+          setSchedules(schedules.map(schedule => schedule.id === editingScheduleId
+              ? { ...schedule, name, days: scheduleDaysDraft }
+              : schedule));
+      } else {
+          const schedule: TimetableSchedule = {
+              id: `schedule-${Date.now()}`,
+              name,
+              days: scheduleDaysDraft,
+              entries: []
+          };
+          setSchedules([...schedules, schedule]);
+          setSelectedScheduleId(schedule.id);
+      }
+
+      setIsScheduleConfigOpen(false);
+      setEditingScheduleId(null);
+  };
+
+  const deleteSchedule = (schedule: TimetableSchedule) => {
+      if (schedules.length === 1) {
+          alert('At least one timetable must remain.');
+          return;
+      }
+      if (!window.confirm(`Delete "${schedule.name}"?`)) return;
+      const remaining = schedules.filter(item => item.id !== schedule.id);
+      setSchedules(remaining);
+      if (schedule.id === selectedSchedule.id) setSelectedScheduleId(remaining[0].id);
+      setIsScheduleMenuOpen(false);
   };
 
   const toggleScheduleDay = (day: number) => {
-      const days = selectedSchedule.days.includes(day)
-          ? selectedSchedule.days.filter(value => value !== day)
-          : [...selectedSchedule.days, day].sort();
-      updateSchedule('days', days);
+      setScheduleDaysDraft(days => days.includes(day)
+          ? days.filter(value => value !== day)
+          : [...days, day].sort());
   };
 
   // --- Alarm Logic ---
@@ -456,64 +482,81 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         </div>
       </div>
 
-      {/* Timetable selection and weekday assignment */}
-      <div className={`${isGlass ? 'bg-neutral-100/45 dark:bg-neutral-900/45 border-white/20 dark:border-white/10' : 'bg-neutral-50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} mb-6 rounded-2xl border p-4 space-y-4`}>
-          <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Timetable</label>
-                  <select
-                      value={selectedSchedule.id}
-                      onChange={(event) => setSelectedScheduleId(event.target.value)}
-                      className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 text-neutral-900 dark:text-white outline-none focus:border-amber-500"
-                  >
-                      {schedules.map(schedule => (
-                          <option key={schedule.id} value={schedule.id}>{schedule.name}</option>
-                      ))}
-                  </select>
-              </div>
-              <div className="flex-1">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Add timetable</label>
-                  <div className="flex gap-2">
-                      <input
-                          value={newScheduleName}
-                          onChange={(event) => setNewScheduleName(event.target.value)}
-                          onKeyDown={(event) => event.key === 'Enter' && createSchedule()}
-                          placeholder="e.g. School days"
-                          className="min-w-0 flex-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 text-neutral-900 dark:text-white outline-none focus:border-amber-500"
-                      />
-                      <button onClick={createSchedule} className="rounded-lg bg-amber-500 px-4 font-bold text-black hover:bg-amber-400">
-                          <Plus size={18} />
-                      </button>
-                  </div>
-              </div>
-          </div>
-          <div>
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">
-                  <CalendarDays size={14} /> Active days
-              </div>
-              <div className="flex flex-wrap gap-2">
-                  {WEEKDAYS.map((day, index) => (
-                      <button
-                          key={day}
-                          onClick={() => toggleScheduleDay(index)}
-                          aria-pressed={selectedSchedule.days.includes(index)}
-                          className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
-                              selectedSchedule.days.includes(index)
-                                  ? 'bg-amber-500 text-black'
-                                  : 'bg-white dark:bg-neutral-900 text-neutral-500 border border-neutral-200 dark:border-neutral-800'
-                          }`}
-                      >
-                          {day}
-                      </button>
+      {/* Compact timetable selector */}
+      <div className="relative mb-6">
+          <button
+              onClick={() => setIsScheduleMenuOpen(value => !value)}
+              className={`${isGlass ? 'bg-neutral-100/45 dark:bg-neutral-900/45 border-white/20 dark:border-white/10' : 'bg-neutral-50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left`}
+              aria-expanded={isScheduleMenuOpen}
+          >
+              <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-neutral-800 dark:text-white">{selectedSchedule.name}</span>
+                  <span className="block truncate text-xs text-neutral-400">
+                      {selectedSchedule.days.length ? selectedSchedule.days.map(day => WEEKDAYS[day]).join(',') : 'No days assigned'}
+                  </span>
+              </span>
+              <ChevronDown size={18} className={`shrink-0 text-neutral-400 transition-transform ${isScheduleMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {isScheduleMenuOpen && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
+                  {schedules.map(schedule => (
+                      <div key={schedule.id} className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                          <button
+                              onClick={() => { setSelectedScheduleId(schedule.id); setIsScheduleMenuOpen(false); }}
+                              className="min-w-0 flex-1 text-left"
+                          >
+                              <span className="block truncate text-sm font-semibold text-neutral-800 dark:text-white">{schedule.name}</span>
+                              <span className="block text-xs text-neutral-400">
+                                  {schedule.days.length ? schedule.days.map(day => WEEKDAYS[day]).join(',') : 'No days assigned'}
+                              </span>
+                          </button>
+                          <button onClick={() => openScheduleConfig(schedule)} className="rounded p-2 text-neutral-400 hover:bg-neutral-200 hover:text-amber-500 dark:hover:bg-neutral-700" title="Configure timetable">
+                              <Settings2 size={16} />
+                          </button>
+                          <button onClick={() => deleteSchedule(schedule)} className="rounded p-2 text-neutral-400 hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30" title="Delete timetable">
+                              <Trash2 size={16} />
+                          </button>
+                      </div>
                   ))}
+                  <button onClick={() => openScheduleConfig()} className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-neutral-200 px-2 py-3 text-sm font-bold text-amber-500 hover:bg-amber-50 dark:border-neutral-800 dark:hover:bg-amber-900/20">
+                      <Plus size={16} /> Add timetable
+                  </button>
               </div>
-              <p className="mt-2 text-xs text-neutral-400">
-                  {selectedSchedule.days.length
-                      ? 'Reminders created from this timetable repeat on the selected days.'
-                      : 'No days selected: reminders created from this timetable are one-time alarms.'}
-              </p>
-          </div>
+          )}
       </div>
+
+      {isScheduleConfigOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+              <div className={`${isGlass ? 'bg-neutral-100/55 dark:bg-neutral-900/50 border-white/20 dark:border-white/10' : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800'} w-full max-w-md rounded-2xl border p-6 shadow-2xl`}>
+                  <div className="mb-5 flex items-center justify-between">
+                      <h3 className="text-xl font-bold text-neutral-900 dark:text-white">{editingScheduleId ? 'Configure timetable' : 'Add timetable'}</h3>
+                      <button onClick={() => setIsScheduleConfigOpen(false)} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-white"><X size={22} /></button>
+                  </div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-neutral-500">Name</label>
+                  <input
+                      autoFocus
+                      value={scheduleNameDraft}
+                      onChange={event => setScheduleNameDraft(event.target.value)}
+                      placeholder="e.g. School days"
+                      className="mb-5 w-full rounded-lg border border-neutral-200 bg-transparent p-3 text-neutral-900 outline-none focus:border-amber-500 dark:border-neutral-800 dark:text-white"
+                  />
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500"><CalendarDays size={14} /> Days</div>
+                  <div className="mb-6 flex flex-wrap gap-2">
+                      {WEEKDAYS.map((day, index) => (
+                          <button
+                              key={day}
+                              onClick={() => toggleScheduleDay(index)}
+                              aria-pressed={scheduleDaysDraft.includes(index)}
+                              className={`rounded-lg px-3 py-2 text-sm font-bold ${scheduleDaysDraft.includes(index) ? 'bg-amber-500 text-black' : 'border border-neutral-200 text-neutral-500 dark:border-neutral-800'}`}
+                          >
+                              {day}
+                          </button>
+                      ))}
+                  </div>
+                  <button onClick={saveScheduleConfig} disabled={!scheduleNameDraft.trim()} className="w-full rounded-lg bg-amber-500 py-3 font-bold text-black hover:bg-amber-400 disabled:opacity-50">SAVE</button>
+              </div>
+          </div>
+      )}
 
       {/* List Container */}
     <div className={`flex-1 rounded-3xl border shadow-xl overflow-hidden flex flex-col ${isGlass ? 'bg-neutral-100/55 dark:bg-neutral-900/50 border-white/20 dark:border-white/10 backdrop-blur-2xl' : 'bg-white dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800'}`}>
