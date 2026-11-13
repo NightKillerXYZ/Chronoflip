@@ -21,7 +21,7 @@ export interface Timer {
 
 export interface TimetableEntry {
   id: string;
-  time: string;
+  time: string; // HH:mm or HH:mm-HH:mm interval
   activity: string;
   notes: string;
 }

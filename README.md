@@ -14,7 +14,7 @@
 *   **🕰️ Retro Flip Clock**: A beautifully animated flip clock with a distraction-free "Zen Mode" (Fullscreen).
 *   **⏰ Smart Alarms**: Persistent alarms with duplicate prevention, snoozing, and custom sound support.
 *   **⏳ Focus Timers**: Multiple concurrent timers with background accuracy (resilient to tab throttling).
-*   **📅 Daily Timetable**: Editable schedule with local storage persistence and file import (JSON/TXT/CSV).
+*   **📅 Daily Timetable**: Editable schedule with local storage persistence, Word/Excel table import, and military-time intervals such as `12:00 - 14:00`. Durations are shown under each task, while reminders trigger only at the interval start.
 *   **🎨 Dynamic Themes**: Toggle between a professional Dark Mode (OLED friendly) and a clean Light Mode.
 *   **🔊 Audio Engine**: Built-in Web Audio API synthesizers and support for custom audio file uploads.
 *   **♿ Accessible**: Fully keyboard navigable with ARIA labels and focus management.

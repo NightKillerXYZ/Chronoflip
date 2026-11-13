@@ -5,6 +5,54 @@ import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, 
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
 import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
+
+const TIME_RANGE_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*([-–—])\s*(\d{1,2}):(\d{2})\s*$/;
+const TIME_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*$/;
+
+const toMinutes = (hours: number, minutes: number) => hours * 60 + minutes;
+
+const getTimeRange = (value: string): { start: string; end?: string; duration?: string } | null => {
+    const range = value.match(TIME_RANGE_PATTERN);
+    const single = value.match(TIME_PATTERN);
+    if (!range && !single) return null;
+
+    const startHours = Number((range || single)?.[1]);
+    const startMinutes = Number((range || single)?.[2]);
+    if (startHours > 23 || startMinutes > 59) return null;
+
+    const start = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
+    if (!range) return { start };
+
+    const endHours = Number(range[3]);
+    const endMinutes = Number(range[4]);
+    if (endHours > 23 || endMinutes > 59) return null;
+
+    const end = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+    const startTotal = toMinutes(startHours, startMinutes);
+    const endTotal = toMinutes(endHours, endMinutes);
+    const totalMinutes = (endTotal - startTotal + 1440) % 1440;
+    if (totalMinutes === 0) return { start, end };
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const duration = hours > 0
+        ? `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`
+        : `${minutes}m`;
+    return { start, end, duration };
+};
+
+const parseImportedRow = (values: string[], id: string): TimetableEntry | null => {
+    const time = values[0]?.trim() || '';
+    const activity = values[1]?.trim() || '';
+    if (!getTimeRange(time) || !activity) return null;
+    return {
+        id,
+        time,
+        activity,
+        notes: values[2]?.trim() || ''
+    };
+};
 
 interface TimetableViewProps {
     alarms: Alarm[];
@@ -77,11 +125,17 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   };
 
   const handleConfirmAlarm = () => {
+      const invalidEntry = entries.find(entry => !getTimeRange(entry.time));
+      if (isBulkAlarmMode && invalidEntry) {
+          alert(`Enter a valid time or interval for "${invalidEntry.activity || 'an untitled task'}" before setting all alarms.`);
+          return;
+      }
+
       if (isBulkAlarmMode) {
           // Create alarms for ALL entries
           const newAlarms: Alarm[] = entries.map((entry, idx) => ({
               id: `tt-bulk-${Date.now()}-${idx}`,
-              time: entry.time,
+              time: getTimeRange(entry.time)?.start || entry.time,
               label: entry.activity || 'Timetable Task',
               active: true,
               soundId: selectedAlarmSound,
@@ -91,10 +145,15 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
           setAlarms([...alarms, ...newAlarms]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
       } else if (selectedEntryForAlarm) {
+          const startTime = getTimeRange(selectedEntryForAlarm.time)?.start;
+          if (!startTime) {
+              alert('Enter a valid time or interval before setting an alarm.');
+              return;
+          }
           // Create single alarm
           const newAlarm: Alarm = {
               id: `tt-${Date.now()}`,
-              time: selectedEntryForAlarm.time,
+              time: startTime,
               label: selectedEntryForAlarm.activity || 'Timetable Reminder',
               active: true,
               soundId: selectedAlarmSound,
@@ -134,7 +193,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                             id: `docx-${Date.now()}-${idx}`,
                             time: cells[0].textContent?.trim() || '',
                             activity: cells[1].textContent?.trim() || '',
-                            notes: '' // Description added in app
+                            notes: cells[2]?.textContent?.trim() || ''
                         };
                     }
                     return null;
@@ -146,6 +205,36 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
             } catch (err) {
                 console.error("Error parsing Word file:", err);
                 alert("Could not parse the Word file. Ensure it contains a table.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        return;
+    }
+
+    // Handle Excel workbooks with the same table shape: Time, Activity, Notes.
+    if (/\.(xlsx|xls)$/i.test(file.name)) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const arrayBuffer = event.target?.result as ArrayBuffer;
+            if (!arrayBuffer) return;
+            try {
+                const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+                    header: 1,
+                    raw: false,
+                    defval: ''
+                });
+                const newEntries = rows
+                    .map((row, idx) => parseImportedRow(
+                        row.map(value => String(value)),
+                        `excel-${Date.now()}-${idx}`
+                    ))
+                    .filter((entry): entry is TimetableEntry => entry !== null);
+                if (newEntries.length > 0) setEntries(prev => [...prev, ...newEntries]);
+            } catch (err) {
+                console.error("Error parsing Excel file:", err);
+                alert("Could not parse the Excel file. Ensure it contains a table with time and activity columns.");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -165,15 +254,11 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         // Fallback for text files line by line
         const lines = content.split('\n');
         const newEntries: TimetableEntry[] = lines.map((line, idx) => {
-            // Very basic parser: 12:00 - Activity
-            const parts = line.split(/[-–]/); // split on hyphen or dash
-            return {
-                id: `upload-${Date.now()}-${idx}`,
-                time: parts[0]?.trim() || '00:00',
-                activity: parts[1]?.trim() || 'Imported Task',
-                notes: ''
-            };
-        }).filter(e => e.time && e.activity && e.activity !== 'Imported Task');
+            const match = line.match(/^\s*((?:\d{1,2}:\d{2})(?:\s*[-–—]\s*\d{1,2}:\d{2})?)\s*[-–—]\s+(.+?)\s*$/);
+            return match
+                ? parseImportedRow([match[1], match[2]], `upload-${Date.now()}-${idx}`)
+                : null;
+        }).filter((entry): entry is TimetableEntry => entry !== null);
         
         if (newEntries.length > 0) {
             setEntries(prev => [...prev, ...newEntries]);
@@ -260,7 +345,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
             <label className="group flex items-center gap-3 px-5 py-3 bg-neutral-900 dark:bg-neutral-800 hover:bg-amber-500 dark:hover:bg-amber-600 rounded-xl cursor-pointer transition-all border border-neutral-800 hover:border-amber-500 text-sm font-bold text-neutral-300 group-hover:text-white shadow-sm w-full md:w-auto justify-center">
                 <Upload size={18} aria-hidden="true" />
                 <span>IMPORT FILE</span>
-                <input type="file" accept=".txt,.json,.csv,.docx" onChange={handleFileUpload} className="hidden" />
+                <input type="file" accept=".txt,.json,.csv,.docx,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
             </label>
         </div>
       </div>
@@ -293,11 +378,13 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                 {/* Time Input */}
                 <div className="flex items-center w-full md:w-32 shrink-0 bg-neutral-50 dark:bg-neutral-950 rounded-lg border border-neutral-200 dark:border-neutral-800 focus-within:border-amber-500 transition-colors">
                     <div className="pl-3 text-neutral-400 md:hidden"><Clock size={14}/></div>
-                    <input 
-                        type="time" 
-                        aria-label="Time"
+                    <input
+                        type="text"
+                        aria-label="Time interval"
                         value={entry.time}
                         onChange={(e) => updateEntry(entry.id, 'time', e.target.value)}
+                        placeholder="12:00 - 14:00"
+                        title="Use HH:mm or HH:mm-HH:mm"
                         className="bg-transparent w-full p-2 text-neutral-900 dark:text-white font-mono font-medium text-lg outline-none text-center md:text-left"
                     />
                 </div>
@@ -312,6 +399,11 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                         placeholder="Activity Name"
                         className="w-full bg-transparent p-2 text-neutral-800 dark:text-neutral-100 font-semibold text-lg placeholder-neutral-300 dark:placeholder-neutral-700 outline-none border-b border-transparent focus:border-amber-500 transition-colors"
                     />
+                    {getTimeRange(entry.time)?.duration && (
+                        <div className="px-2 text-xs text-neutral-400 dark:text-neutral-500">
+                            {getTimeRange(entry.time)?.duration}
+                        </div>
+                    )}
                 </div>
 
                 {/* Notes Input */}
