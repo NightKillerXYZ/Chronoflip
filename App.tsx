@@ -852,31 +852,13 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Sidebar Trigger (Mobile) */}
-      {!isZenMode && (
-        <button 
-          className="absolute top-4 left-4 z-50 md:hidden p-2.5 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md rounded-xl text-neutral-600 dark:text-neutral-400 shadow-lg border border-neutral-200 dark:border-neutral-800 active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none"
-          onClick={() => setSidebarOpen(!isSidebarOpen)}
-          aria-label={isSidebarOpen ? "Close Menu" : "Open Menu"}
-        >
-          {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      )}
-
-      {isSidebarOpen && !isZenMode && (
-        <div 
-            className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm animate-fade-in"
-            onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       {/* Sidebar - Glassmorphism Style */}
       <div className={`
-        fixed md:relative z-40 h-full 
+        app-sidebar hidden md:flex md:relative z-40 h-full
         ${isGlass ? 'bg-neutral-100/52 dark:bg-neutral-900/50 border-white/18 dark:border-white/10' : 'bg-white/80 dark:bg-neutral-950/80 border-white/20 dark:border-white/5'} backdrop-blur-2xl 
         border-r 
-        transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) flex flex-col shadow-2xl md:shadow-none
-        ${isZenMode ? '-translate-x-full w-0 opacity-0 overflow-hidden' : (isSidebarOpen ? 'w-72 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-24')}
+        transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) md:flex md:flex-col shadow-2xl md:shadow-none
+        ${isZenMode ? '-translate-x-full w-0 opacity-0 overflow-hidden' : (isSidebarOpen ? 'w-72 translate-x-0' : 'translate-x-0 md:w-24')}
       `}>
         {!isZenMode && (
           <button 
@@ -928,7 +910,42 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <main className={`flex-1 relative h-full overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) ${isZenMode ? 'w-screen' : ''}`}>
+      {!isZenMode && (
+        <nav
+          aria-label="Mobile navigation"
+          className={`${isGlass ? 'bg-neutral-100/80 dark:bg-neutral-900/80 border-white/20 dark:border-white/10' : 'bg-white/90 dark:bg-neutral-950/90 border-neutral-200 dark:border-neutral-800'} mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.18)] backdrop-blur-xl md:hidden`}
+        >
+          {[
+            [ViewState.CLOCK, Clock, 'Clock'],
+            [ViewState.ALARM, AlarmClock, 'Alarm'],
+            [ViewState.TIMER, TimerIcon, 'Timer'],
+            [ViewState.STOPWATCH, Watch, 'Stopwatch'],
+            [ViewState.TIMETABLE, Calendar, 'Timetable'],
+          ].map(([view, Icon, label]) => {
+            const isActive = currentView === view;
+            return (
+              <button
+                key={label as string}
+                onClick={() => {
+                  handleVibrate(10);
+                  setCurrentView(view as ViewState);
+                  setZenMode(false);
+                }}
+                aria-label={label as string}
+                aria-current={isActive ? 'page' : undefined}
+                className={`flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 whitespace-nowrap text-[10px] font-semibold transition-colors ${
+                  isActive ? 'text-amber-500 dark:text-amber-400' : 'text-neutral-500 dark:text-neutral-400'
+                }`}
+              >
+                <Icon size={21} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
+                <span>{label as string}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      <main className={`app-main flex-1 relative h-full overflow-hidden transition-all duration-500 cubic-bezier(0.4, 0, 0.2, 1) pb-16 md:pb-0 ${isZenMode ? 'w-screen pb-0' : ''}`}>
         {renderView()}
       </main>
     </div>

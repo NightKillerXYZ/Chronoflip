@@ -8,6 +8,40 @@ body {
   margin: 0;
 }
 
+.app-sidebar {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: flex;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  height: 4rem;
+}
+
+.app-main {
+  padding-bottom: 4rem;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .app-sidebar {
+    display: flex;
+  }
+
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .app-main {
+    padding-bottom: 0;
+  }
+}
+
 *:focus-visible {
   outline: 2px solid rgba(245, 158, 11, 0.6);
   outline-offset: 2px;
