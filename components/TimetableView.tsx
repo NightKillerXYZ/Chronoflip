@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { TimetableEntry, Alarm, SOUND_PRESETS, CustomSound, AppearanceSettings } from '../types';
-import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { TimetableEntry, TimetableSchedule, Alarm, SOUND_PRESETS, CustomSound, AppearanceSettings } from '../types';
+import { Plus, Trash2, Upload, FileText, Clock, AlignLeft, StickyNote, Bell, X, Check, BellRing, CalendarDays } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { SoundPicker } from './SoundPicker';
 import mammoth from 'mammoth';
@@ -9,23 +9,39 @@ import * as XLSX from 'xlsx';
 
 const TIME_RANGE_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*([-–—])\s*(\d{1,2}):(\d{2})\s*$/;
 const TIME_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*$/;
+const TIME_WITH_MERIDIEM_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*$/i;
 
 const toMinutes = (hours: number, minutes: number) => hours * 60 + minutes;
 
 const getTimeRange = (value: string): { start: string; end?: string; duration?: string } | null => {
-    const range = value.match(TIME_RANGE_PATTERN);
-    const single = value.match(TIME_PATTERN);
-    if (!range && !single) return null;
+    const normalized = value.replace(/\u00a0/g, ' ').trim();
+    const parseClock = (clock: string) => {
+        const military = clock.match(TIME_PATTERN);
+        const meridiem = clock.match(TIME_WITH_MERIDIEM_PATTERN);
+        if (!military && !meridiem) return null;
+        let hours = Number((military || meridiem)?.[1]);
+        const minutes = Number((military || meridiem)?.[2]);
+        if (meridiem) {
+            if (hours < 1 || hours > 12) return null;
+            if (meridiem[3].toUpperCase() === 'PM' && hours !== 12) hours += 12;
+            if (meridiem[3].toUpperCase() === 'AM' && hours === 12) hours = 0;
+        }
+        return { hours, minutes };
+    };
+    const range = normalized.match(/^\s*(.+?)\s*([-–—])\s*(.+?)\s*$/);
+    const startClock = parseClock(range ? range[1] : normalized);
+    const endClock = range ? parseClock(range[3]) : null;
+    if (!startClock || (range && !endClock)) return null;
 
-    const startHours = Number((range || single)?.[1]);
-    const startMinutes = Number((range || single)?.[2]);
+    const startHours = startClock.hours;
+    const startMinutes = startClock.minutes;
     if (startHours > 23 || startMinutes > 59) return null;
 
     const start = `${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}`;
-    if (!range) return { start };
+    if (!endClock) return { start };
 
-    const endHours = Number(range[3]);
-    const endMinutes = Number(range[4]);
+    const endHours = endClock.hours;
+    const endMinutes = endClock.minutes;
     if (endHours > 23 || endMinutes > 59) return null;
 
     const end = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
@@ -43,15 +59,36 @@ const getTimeRange = (value: string): { start: string; end?: string; duration?: 
 };
 
 const parseImportedRow = (values: string[], id: string): TimetableEntry | null => {
-    const time = values[0]?.trim() || '';
-    const activity = values[1]?.trim() || '';
-    if (!getTimeRange(time) || !activity) return null;
+    const first = values[0]?.trim() || '';
+    const second = values[1]?.trim() || '';
+    const firstTime = getTimeRange(first);
+    const secondTime = getTimeRange(second);
+    const time = firstTime && secondTime
+        ? `${firstTime.start}-${secondTime.start}`
+        : first;
+    const activity = firstTime && secondTime ? values[2]?.trim() || '' : second;
+    const notes = firstTime && secondTime ? values[3]?.trim() || '' : values[2]?.trim() || '';
+    const parsedTime = getTimeRange(time);
+    if (!parsedTime || !activity) return null;
     return {
         id,
-        time,
+        time: parsedTime.end ? `${parsedTime.start}-${parsedTime.end}` : parsedTime.start,
         activity,
-        notes: values[2]?.trim() || ''
+        notes
     };
+};
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const defaultEntries: TimetableEntry[] = [
+    { id: '1', time: '09:00', activity: 'Morning Standup', notes: 'Discuss Q3 Goals' },
+    { id: '2', time: '11:30', activity: 'Deep Work Session', notes: 'Focus on API Integration' },
+    { id: '3', time: '14:00', activity: 'Client Call', notes: 'Prepare slide deck' },
+];
+const defaultSchedule: TimetableSchedule = {
+    id: 'default',
+    name: 'Main timetable',
+    days: [],
+    entries: defaultEntries
 };
 
 interface TimetableViewProps {
@@ -70,11 +107,31 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         alarms, setAlarms, defaultSoundId, customSounds, onUpload, onRename, onDelete, appearance
 }) => {
     const isGlass = Boolean(appearance?.transparentMode);
-  const [entries, setEntries] = useLocalStorage<TimetableEntry[]>('timetable', [
-    { id: '1', time: '09:00', activity: 'Morning Standup', notes: 'Discuss Q3 Goals' },
-    { id: '2', time: '11:30', activity: 'Deep Work Session', notes: 'Focus on API Integration' },
-    { id: '3', time: '14:00', activity: 'Client Call', notes: 'Prepare slide deck' },
-  ]);
+  const [schedules, setSchedules] = useLocalStorage<TimetableSchedule[]>('timetable-schedules', [defaultSchedule]);
+  const [selectedScheduleId, setSelectedScheduleId] = useState(defaultSchedule.id);
+  const [newScheduleName, setNewScheduleName] = useState('');
+  const selectedSchedule = schedules.find(schedule => schedule.id === selectedScheduleId) || schedules[0] || defaultSchedule;
+  const entries = selectedSchedule.entries;
+
+  useEffect(() => {
+    const legacy = window.localStorage.getItem('timetable');
+    if (legacy && !window.localStorage.getItem('timetable-schedules')) {
+        try {
+            const legacyEntries = JSON.parse(legacy) as TimetableEntry[];
+            if (Array.isArray(legacyEntries)) {
+                setSchedules([{ ...defaultSchedule, entries: legacyEntries }]);
+            }
+        } catch (error) {
+            console.warn('Could not migrate the saved timetable:', error);
+        }
+    }
+  }, [setSchedules]);
+
+  useEffect(() => {
+    if (!schedules.some(schedule => schedule.id === selectedScheduleId) && schedules[0]) {
+        setSelectedScheduleId(schedules[0].id);
+    }
+  }, [schedules, selectedScheduleId]);
   
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -88,22 +145,55 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   // We initialize state with the prop, but users might want to change it per alarm.
 
   const updateEntry = (id: string, field: keyof TimetableEntry, value: string) => {
-    setEntries(entries.map(e => e.id === id ? { ...e, [field]: value } : e));
+    setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+        ? { ...schedule, entries: schedule.entries.map(e => e.id === id ? { ...e, [field]: value } : e) }
+        : schedule));
   };
 
   const addEntry = () => {
     const id = Date.now().toString();
-    setEntries([...entries, { id, time: '12:00', activity: '', notes: '' }]);
+    setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+        ? { ...schedule, entries: [...schedule.entries, { id, time: '12:00', activity: '', notes: '' }] }
+        : schedule));
   };
 
   const removeEntry = (id: string) => {
     if (deleteConfirmId === id) {
-        setEntries(entries.filter(e => e.id !== id));
+        setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+            ? { ...schedule, entries: schedule.entries.filter(e => e.id !== id) }
+            : schedule));
         setDeleteConfirmId(null);
     } else {
         setDeleteConfirmId(id);
         setTimeout(() => setDeleteConfirmId(null), 3000);
     }
+  };
+
+  const createSchedule = () => {
+      const name = newScheduleName.trim();
+      if (!name) return;
+      const schedule: TimetableSchedule = {
+          id: `schedule-${Date.now()}`,
+          name,
+          days: [],
+          entries: []
+      };
+      setSchedules([...schedules, schedule]);
+      setSelectedScheduleId(schedule.id);
+      setNewScheduleName('');
+  };
+
+  const updateSchedule = (field: keyof TimetableSchedule, value: string | number[]) => {
+      setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+          ? { ...schedule, [field]: value }
+          : schedule));
+  };
+
+  const toggleScheduleDay = (day: number) => {
+      const days = selectedSchedule.days.includes(day)
+          ? selectedSchedule.days.filter(value => value !== day)
+          : [...selectedSchedule.days, day].sort();
+      updateSchedule('days', days);
   };
 
   // --- Alarm Logic ---
@@ -139,7 +229,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               label: entry.activity || 'Timetable Task',
               active: true,
               soundId: selectedAlarmSound,
-              days: [] // Initialize as one-time alarm
+              days: selectedSchedule.days
           }));
 
           setAlarms([...alarms, ...newAlarms]);
@@ -157,7 +247,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               label: selectedEntryForAlarm.activity || 'Timetable Reminder',
               active: true,
               soundId: selectedAlarmSound,
-              days: [] // Initialize as one-time alarm
+              days: selectedSchedule.days
           };
           setAlarms([...alarms, newAlarm]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
@@ -189,18 +279,18 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                 const newEntries = rows.map((row, idx) => {
                     const cells = row.querySelectorAll('td');
                     if (cells.length >= 2) {
-                        return {
-                            id: `docx-${Date.now()}-${idx}`,
-                            time: cells[0].textContent?.trim() || '',
-                            activity: cells[1].textContent?.trim() || '',
-                            notes: cells[2]?.textContent?.trim() || ''
-                        };
+                        return parseImportedRow(
+                            Array.from(cells).map(cell => cell.textContent?.trim() || ''),
+                            `docx-${Date.now()}-${idx}`
+                        );
                     }
                     return null;
-                }).filter(e => e && e.time && e.activity) as TimetableEntry[];
+                }).filter((entry): entry is TimetableEntry => entry !== null);
 
                 if (newEntries.length > 0) {
-                     setEntries(prev => [...prev, ...newEntries]);
+                     setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                         ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
+                         : schedule));
                 }
             } catch (err) {
                 console.error("Error parsing Word file:", err);
@@ -231,7 +321,11 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                         `excel-${Date.now()}-${idx}`
                     ))
                     .filter((entry): entry is TimetableEntry => entry !== null);
-                if (newEntries.length > 0) setEntries(prev => [...prev, ...newEntries]);
+                if (newEntries.length > 0) {
+                    setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                        ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
+                        : schedule));
+                }
             } catch (err) {
                 console.error("Error parsing Excel file:", err);
                 alert("Could not parse the Excel file. Ensure it contains a table with time and activity columns.");
@@ -248,7 +342,17 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       try {
         const parsed = JSON.parse(content);
         if (Array.isArray(parsed)) {
-            setEntries(parsed);
+            if (Array.isArray(parsed)) {
+                const importedEntries = parsed
+                    .map((entry, idx) => parseImportedRow(
+                        [String(entry.time || ''), String(entry.activity || ''), String(entry.notes || '')],
+                        `json-${Date.now()}-${idx}`
+                    ))
+                    .filter((entry): entry is TimetableEntry => entry !== null);
+                setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                    ? { ...schedule, entries: importedEntries }
+                    : schedule));
+            }
         }
       } catch (err) {
         // Fallback for text files line by line
@@ -261,7 +365,9 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         }).filter((entry): entry is TimetableEntry => entry !== null);
         
         if (newEntries.length > 0) {
-            setEntries(prev => [...prev, ...newEntries]);
+            setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
+                : schedule));
         }
       }
     };
@@ -348,6 +454,65 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                 <input type="file" accept=".txt,.json,.csv,.docx,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
             </label>
         </div>
+      </div>
+
+      {/* Timetable selection and weekday assignment */}
+      <div className={`${isGlass ? 'bg-neutral-100/45 dark:bg-neutral-900/45 border-white/20 dark:border-white/10' : 'bg-neutral-50 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} mb-6 rounded-2xl border p-4 space-y-4`}>
+          <div className="flex flex-col md:flex-row gap-3">
+              <div className="flex-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Timetable</label>
+                  <select
+                      value={selectedSchedule.id}
+                      onChange={(event) => setSelectedScheduleId(event.target.value)}
+                      className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 text-neutral-900 dark:text-white outline-none focus:border-amber-500"
+                  >
+                      {schedules.map(schedule => (
+                          <option key={schedule.id} value={schedule.id}>{schedule.name}</option>
+                      ))}
+                  </select>
+              </div>
+              <div className="flex-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Add timetable</label>
+                  <div className="flex gap-2">
+                      <input
+                          value={newScheduleName}
+                          onChange={(event) => setNewScheduleName(event.target.value)}
+                          onKeyDown={(event) => event.key === 'Enter' && createSchedule()}
+                          placeholder="e.g. School days"
+                          className="min-w-0 flex-1 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-3 text-neutral-900 dark:text-white outline-none focus:border-amber-500"
+                      />
+                      <button onClick={createSchedule} className="rounded-lg bg-amber-500 px-4 font-bold text-black hover:bg-amber-400">
+                          <Plus size={18} />
+                      </button>
+                  </div>
+              </div>
+          </div>
+          <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">
+                  <CalendarDays size={14} /> Active days
+              </div>
+              <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map((day, index) => (
+                      <button
+                          key={day}
+                          onClick={() => toggleScheduleDay(index)}
+                          aria-pressed={selectedSchedule.days.includes(index)}
+                          className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
+                              selectedSchedule.days.includes(index)
+                                  ? 'bg-amber-500 text-black'
+                                  : 'bg-white dark:bg-neutral-900 text-neutral-500 border border-neutral-200 dark:border-neutral-800'
+                          }`}
+                      >
+                          {day}
+                      </button>
+                  ))}
+              </div>
+              <p className="mt-2 text-xs text-neutral-400">
+                  {selectedSchedule.days.length
+                      ? 'Reminders created from this timetable repeat on the selected days.'
+                      : 'No days selected: reminders created from this timetable are one-time alarms.'}
+              </p>
+          </div>
       </div>
 
       {/* List Container */}

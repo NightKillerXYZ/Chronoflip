@@ -26,6 +26,13 @@ export interface TimetableEntry {
   notes: string;
 }
 
+export interface TimetableSchedule {
+  id: string;
+  name: string;
+  days: number[]; // 0 = Sunday, 1 = Monday, etc.
+  entries: TimetableEntry[];
+}
+
 export interface CustomSound {
   id: string;
   name: string;
