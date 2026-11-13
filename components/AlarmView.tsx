@@ -152,6 +152,13 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
       });
   };
 
+  const toggleAlarmGroup = (groupAlarms: Alarm[]) => {
+      const shouldActivate = groupAlarms.some(alarm => !alarm.active);
+      const ids = new Set(groupAlarms.map(alarm => alarm.id));
+      setAlarms(alarms.map(alarm => ids.has(alarm.id) ? { ...alarm, active: shouldActivate } : alarm));
+      if (navigator.vibrate) navigator.vibrate(20);
+  };
+
   useEffect(() => {
     if (Notification.permission === 'default') Notification.requestPermission();
   }, []);
@@ -324,8 +331,16 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
             .filter(group => group.alarms.length > 0)
             .map(group => (
             <section key={group.id} className={`${isGlass ? 'bg-white/10 dark:bg-white/5 border-white/20 dark:border-white/10' : 'bg-neutral-50/70 dark:bg-neutral-950/50 border-neutral-200 dark:border-neutral-800'} rounded-2xl border overflow-hidden`}>
-                <button
+                <div
                     onClick={() => toggleGroup(group.id)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            toggleGroup(group.id);
+                        }
+                    }}
+                    role="button"
+                    tabIndex={0}
                     aria-expanded={openGroups.has(group.id)}
                     className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-neutral-100/70 dark:hover:bg-neutral-900/70"
                 >
@@ -333,8 +348,17 @@ export const AlarmView: React.FC<AlarmViewProps> = ({
                         <span className="block truncate text-sm font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-200">{group.name}</span>
                         <span className="block text-xs text-neutral-400">{group.alarms.length} {group.alarms.length === 1 ? 'alarm' : 'alarms'}</span>
                     </span>
-                    <ChevronDown size={18} className={`shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.id) ? 'rotate-180' : ''}`} />
-                </button>
+                    <span className="flex items-center gap-3">
+                        <button
+                            onClick={(event) => { event.stopPropagation(); toggleAlarmGroup(group.alarms); }}
+                            aria-label={`${group.alarms.every(alarm => alarm.active) ? 'Turn off' : 'Turn on'} all alarms in ${group.name}`}
+                            className={`relative h-6 w-11 rounded-full transition-colors ${group.alarms.every(alarm => alarm.active) ? 'bg-amber-500' : 'bg-neutral-300 dark:bg-neutral-700'}`}
+                        >
+                            <span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${group.alarms.every(alarm => alarm.active) ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                        <ChevronDown size={18} className={`shrink-0 text-neutral-400 transition-transform ${openGroups.has(group.id) ? 'rotate-180' : ''}`} />
+                    </span>
+                </div>
                 {openGroups.has(group.id) && (
                 <div className="space-y-2 border-t border-neutral-200 p-2 dark:border-neutral-800" role="group" aria-label={group.name}>
                 {group.alarms.map(alarm => (

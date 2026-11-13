@@ -257,7 +257,8 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               soundId: selectedAlarmSound,
               days: selectedSchedule.days,
               timetableId: selectedSchedule.id,
-              timetableName: selectedSchedule.name
+              timetableName: selectedSchedule.name,
+              timetableEntryId: entry.id
           }));
 
           setAlarms([...alarms, ...newAlarms]);
@@ -277,7 +278,23 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               soundId: selectedAlarmSound,
               days: selectedSchedule.days,
               timetableId: selectedSchedule.id,
-              timetableName: selectedSchedule.name
+              timetableName: selectedSchedule.name,
+              timetableEntryId: selectedEntryForAlarm.id
+          };
+
+          const getEntryAlarm = (entry: TimetableEntry) => alarms.find(alarm =>
+              alarm.timetableId === selectedSchedule.id &&
+              (alarm.timetableEntryId === entry.id || (!alarm.timetableEntryId && alarm.label === entry.activity))
+          );
+
+          const toggleEntryAlarm = (entry: TimetableEntry) => {
+              const alarm = getEntryAlarm(entry);
+              if (!alarm) {
+                  openAlarmModal(entry);
+                  return;
+              }
+              setAlarms(alarms.map(item => item.id === alarm.id ? { ...item, active: !item.active } : item));
+              if (navigator.vibrate) navigator.vibrate(20);
           };
           setAlarms([...alarms, newAlarm]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
@@ -633,12 +650,18 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
 
                 {/* Actions */}
                 <div className="flex justify-end gap-2 md:w-24 shrink-0">
-                    <button 
-                        onClick={() => openAlarmModal(entry)}
-                        className="p-2 rounded-lg text-neutral-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
-                        title="Set Alarm for this activity"
+                    <button
+                        onClick={() => toggleEntryAlarm(entry)}
+                        className={`p-2 rounded-lg transition-all ${
+                            getEntryAlarm(entry)?.active
+                                ? 'text-amber-500 bg-amber-500/10'
+                                : getEntryAlarm(entry)
+                                    ? 'text-neutral-400 bg-neutral-100 dark:bg-neutral-800'
+                                    : 'text-neutral-300 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                        }`}
+                        title={getEntryAlarm(entry) ? (getEntryAlarm(entry)?.active ? 'Turn alarm off' : 'Turn alarm on') : 'Set alarm for this activity'}
                     >
-                        <Bell size={18} />
+                        {getEntryAlarm(entry)?.active ? <Bell size={18} className="fill-current" /> : <Bell size={18} />}
                     </button>
 
                     <button 
