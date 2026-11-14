@@ -310,20 +310,6 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               timetableEntryId: selectedEntryForAlarm.id
           };
 
-          const getEntryAlarm = (entry: TimetableEntry) => alarms.find(alarm =>
-              alarm.timetableId === selectedSchedule.id &&
-              (alarm.timetableEntryId === entry.id || (!alarm.timetableEntryId && alarm.label === entry.activity))
-          );
-
-          const toggleEntryAlarm = (entry: TimetableEntry) => {
-              const alarm = getEntryAlarm(entry);
-              if (!alarm) {
-                  openAlarmModal(entry);
-                  return;
-              }
-              setAlarms(alarms.map(item => item.id === alarm.id ? { ...item, active: !item.active } : item));
-              if (navigator.vibrate) navigator.vibrate(20);
-          };
           setAlarms([...alarms, newAlarm]);
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
       }
@@ -331,6 +317,21 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       setIsAlarmModalOpen(false);
       setSelectedEntryForAlarm(null);
       setIsBulkAlarmMode(false);
+  };
+
+  const getEntryAlarm = (entry: TimetableEntry) => alarms.find(alarm =>
+      alarm.timetableId === selectedSchedule.id &&
+      (alarm.timetableEntryId === entry.id || (!alarm.timetableEntryId && alarm.label === entry.activity))
+  );
+
+  const toggleEntryAlarm = (entry: TimetableEntry) => {
+      const alarm = getEntryAlarm(entry);
+      if (!alarm) {
+          openAlarmModal(entry);
+          return;
+      }
+      setAlarms(alarms.map(item => item.id === alarm.id ? { ...item, active: !item.active } : item));
+      if (navigator.vibrate) navigator.vibrate(20);
   };
 
   // --- File Import Logic ---
