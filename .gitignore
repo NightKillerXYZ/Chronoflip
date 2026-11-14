@@ -75,11 +75,9 @@ electron-build/
 *.AppImage
 
 ########################################
-# Android / Capacitor / APK (FUTURE)
+# Android / Capacitor / APK
 ########################################
-android/
 ios/
-capacitor.config.ts
 *.apk
 *.aab
 

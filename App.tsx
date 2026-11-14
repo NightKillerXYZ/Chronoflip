@@ -11,6 +11,15 @@ import { audioService } from './services/audioService';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useWakeLock } from './hooks/useWakeLock';
 import { SoundPicker } from './components/SoundPicker';
+import {
+  addNativeAlarmListener,
+  addNativeAlarmActionListener,
+  isNativeAndroid,
+  requestNativeAlarmPermissions,
+  snoozeNativeAlarm,
+  stopNativeAlarm,
+  syncNativeAlarms
+} from './services/nativeAlarmBridge';
 
 // --- TIMEZONE DATA ---
 const MAJOR_CITIES = [
@@ -79,6 +88,61 @@ const App: React.FC = () => {
   const [customSounds, setCustomSounds] = useLocalStorage<CustomSound[]>('customSounds', []);
   const [activeAlertId, setActiveAlertId] = useState<string | null>(null); 
   const [alertType, setAlertType] = useState<'ALARM' | 'TIMER' | null>(null);
+
+  useEffect(() => {
+    if (!isNativeAndroid()) return;
+    requestNativeAlarmPermissions().catch(error => {
+      console.warn('Android alarm permissions could not be requested:', error);
+    });
+    syncNativeAlarms(alarms).catch(error => {
+      console.warn('Android alarms could not be synchronized:', error);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isNativeAndroid()) return;
+    syncNativeAlarms(alarms).catch(error => {
+      console.warn('Android alarms could not be synchronized:', error);
+    });
+  }, [alarms]);
+
+  useEffect(() => {
+    let subscription: { remove: () => Promise<void> } | undefined;
+    addNativeAlarmListener(event => {
+      setActiveAlertId(event.alarmId);
+      setAlertType('ALARM');
+      setAlarms(current => current.map(alarm =>
+        alarm.id === event.alarmId && alarm.days.length === 0
+          ? { ...alarm, active: false }
+          : alarm
+      ));
+    }).then(value => {
+      subscription = value;
+    }).catch(error => {
+      console.warn('Android alarm events could not be registered:', error);
+    });
+    return () => {
+      subscription?.remove().catch(() => undefined);
+    };
+  }, [setAlarms]);
+
+  useEffect(() => {
+    let subscription: { remove: () => Promise<void> } | undefined;
+    addNativeAlarmActionListener(event => {
+      if (event.action === 'stop' || event.action === 'snooze') {
+        setActiveAlertId(null);
+        setAlertType(null);
+        audioService.stopAlarm();
+      }
+    }).then(value => {
+      subscription = value;
+    }).catch(error => {
+      console.warn('Android alarm actions could not be registered:', error);
+    });
+    return () => {
+      subscription?.remove().catch(() => undefined);
+    };
+  }, []);
 
   // --- AUDIO PERSISTENCE HYDRATION ---
   useEffect(() => {
@@ -228,6 +292,7 @@ const App: React.FC = () => {
 
   // --- LOGIC: ALARMS ---
   useEffect(() => {
+    if (isNativeAndroid()) return;
     const interval = setInterval(() => {
       const now = new Date();
       const currentHours = now.getHours();
@@ -324,6 +389,11 @@ const App: React.FC = () => {
   };
 
   const stopAlert = () => {
+    if (activeAlertId) {
+      stopNativeAlarm(activeAlertId).catch(error => {
+        console.warn('Android alarm could not be stopped:', error);
+      });
+    }
     setActiveAlertId(null);
     setAlertType(null);
     audioService.stopAlarm();
@@ -336,6 +406,14 @@ const App: React.FC = () => {
       if (alertType === 'ALARM') {
           const alarm = alarms.find(a => a.id === activeAlertId);
           if (alarm) {
+              if (isNativeAndroid()) {
+                  snoozeNativeAlarm(alarm.id, snoozeMinutes).catch(error => {
+                      console.warn('Android alarm could not be snoozed:', error);
+                  });
+                  stopAlert();
+                  handleVibrate(50);
+                  return;
+              }
               const now = new Date();
               now.setMinutes(now.getMinutes() + snoozeMinutes);
               const newTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;

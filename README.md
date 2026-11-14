@@ -54,6 +54,33 @@
 
 4.  Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## Android APK alarms
+
+The Android build uses Capacitor and a native `AlarmManager` scheduler. The web interface and browser alarm behavior remain unchanged; Android synchronizes the existing alarm records to native storage and disables the JavaScript minute scheduler in the native Android shell so an alarm cannot fire twice.
+
+### Build and install
+
+1. Install Node.js 18+ and Android Studio with an API 35 platform and build tools.
+2. Run `npm install`.
+3. Build and sync the Android project:
+   ```bash
+   npm run android:sync
+   ```
+4. Build a debug APK:
+   ```bash
+   cd android
+   ./gradlew assembleDebug
+   ```
+5. Install `android/app/build/outputs/apk/debug/app-debug.apk` on a device or emulator.
+
+On first launch, grant notification permission. On Android 12+, allow exact alarms for ChronoFlip in the system alarm permission screen when the device requires it. The native scheduler also reschedules after reboot, app replacement, clock changes, and timezone changes.
+
+### Background test
+
+Create an alarm one or two minutes ahead, enable it, close or background the app, turn the screen off, and wait for the notification. Verify the notification's **Snooze 5m** and **Stop** actions, then repeat with a weekday/repeating alarm. Test reboot and timezone changes separately because both reschedule the native alarms.
+
+Android background delivery still depends on the device's exact-alarm permission and vendor battery policies. ChronoFlip cannot override Do Not Disturb, silent mode, force-stop behavior, or every manufacturer's battery restrictions. Native playback currently uses the device's default alarm sound; the selected ChronoFlip sound ID is synchronized and retained, while browser-only custom/Web Audio sounds are not available after the web process is closed.
+
 ## Reliability & Performance
 
 ChronoFlip is engineered for reliability:
