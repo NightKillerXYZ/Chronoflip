@@ -13,7 +13,8 @@ const TIME_WITH_MERIDIEM_PATTERN = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*$/i;
 
 const toMinutes = (hours: number, minutes: number) => hours * 60 + minutes;
 
-const getTimeRange = (value: string): { start: string; end?: string; duration?: string } | null => {
+const getTimeRange = (value?: string): { start: string; end?: string; duration?: string } | null => {
+    if (!value) return null;
     const normalized = value.replace(/\u00a0/g, ' ').trim();
     const parseClock = (clock: string) => {
         const military = clock.match(TIME_PATTERN);
@@ -91,6 +92,24 @@ const defaultSchedule: TimetableSchedule = {
     entries: defaultEntries
 };
 
+const normalizeEntry = (entry: Partial<TimetableEntry> | null | undefined, index: number): TimetableEntry => ({
+    id: String(entry?.id || `entry-${index}`),
+    time: typeof entry?.time === 'string' ? entry.time : '12:00',
+    activity: typeof entry?.activity === 'string' ? entry.activity : '',
+    notes: typeof entry?.notes === 'string' ? entry.notes : ''
+});
+
+const normalizeSchedule = (schedule: Partial<TimetableSchedule> | null | undefined, index: number): TimetableSchedule => ({
+    id: String(schedule?.id || `schedule-${index}`),
+    name: typeof schedule?.name === 'string' && schedule.name.trim() ? schedule.name : `Timetable ${index + 1}`,
+    days: Array.isArray(schedule?.days)
+        ? schedule.days.filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+        : [],
+    entries: Array.isArray(schedule?.entries)
+        ? schedule.entries.map((entry, entryIndex) => normalizeEntry(entry, entryIndex))
+        : []
+});
+
 interface TimetableViewProps {
     alarms: Alarm[];
     setAlarms: (alarms: Alarm[]) => void;
@@ -114,8 +133,17 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [scheduleNameDraft, setScheduleNameDraft] = useState('');
   const [scheduleDaysDraft, setScheduleDaysDraft] = useState<number[]>([]);
-  const selectedSchedule = schedules.find(schedule => schedule.id === selectedScheduleId) || schedules[0] || defaultSchedule;
+  const safeSchedules = Array.isArray(schedules) && schedules.length > 0
+      ? schedules.map((schedule, index) => normalizeSchedule(schedule, index))
+      : [defaultSchedule];
+  const selectedSchedule = safeSchedules.find(schedule => schedule.id === selectedScheduleId) || safeSchedules[0];
   const entries = selectedSchedule.entries;
+
+  useEffect(() => {
+    if (!Array.isArray(schedules) || JSON.stringify(schedules) !== JSON.stringify(safeSchedules)) {
+        setSchedules(safeSchedules);
+    }
+  }, [schedules]);
 
   useEffect(() => {
     const legacy = window.localStorage.getItem('timetable');
@@ -132,10 +160,10 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   }, [setSchedules]);
 
   useEffect(() => {
-    if (!schedules.some(schedule => schedule.id === selectedScheduleId) && schedules[0]) {
-        setSelectedScheduleId(schedules[0].id);
+    if (!safeSchedules.some(schedule => schedule.id === selectedScheduleId)) {
+        setSelectedScheduleId(safeSchedules[0].id);
     }
-  }, [schedules, selectedScheduleId]);
+  }, [safeSchedules, selectedScheduleId]);
   
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -149,21 +177,21 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   // We initialize state with the prop, but users might want to change it per alarm.
 
   const updateEntry = (id: string, field: keyof TimetableEntry, value: string) => {
-    setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+    setSchedules(safeSchedules.map(schedule => schedule.id === selectedSchedule.id
         ? { ...schedule, entries: schedule.entries.map(e => e.id === id ? { ...e, [field]: value } : e) }
         : schedule));
   };
 
   const addEntry = () => {
     const id = Date.now().toString();
-    setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+    setSchedules(safeSchedules.map(schedule => schedule.id === selectedSchedule.id
         ? { ...schedule, entries: [...schedule.entries, { id, time: '12:00', activity: '', notes: '' }] }
         : schedule));
   };
 
   const removeEntry = (id: string) => {
     if (deleteConfirmId === id) {
-        setSchedules(schedules.map(schedule => schedule.id === selectedSchedule.id
+        setSchedules(safeSchedules.map(schedule => schedule.id === selectedSchedule.id
             ? { ...schedule, entries: schedule.entries.filter(e => e.id !== id) }
             : schedule));
         setDeleteConfirmId(null);
@@ -186,7 +214,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
       if (!name) return;
 
       if (editingScheduleId) {
-          setSchedules(schedules.map(schedule => schedule.id === editingScheduleId
+          setSchedules(safeSchedules.map(schedule => schedule.id === editingScheduleId
               ? { ...schedule, name, days: scheduleDaysDraft }
               : schedule));
       } else {
@@ -196,7 +224,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
               days: scheduleDaysDraft,
               entries: []
           };
-          setSchedules([...schedules, schedule]);
+          setSchedules([...safeSchedules, schedule]);
           setSelectedScheduleId(schedule.id);
       }
 
@@ -205,12 +233,12 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
   };
 
   const deleteSchedule = (schedule: TimetableSchedule) => {
-      if (schedules.length === 1) {
+      if (safeSchedules.length === 1) {
           alert('At least one timetable must remain.');
           return;
       }
       if (!window.confirm(`Delete "${schedule.name}"?`)) return;
-      const remaining = schedules.filter(item => item.id !== schedule.id);
+      const remaining = safeSchedules.filter(item => item.id !== schedule.id);
       setSchedules(remaining);
       if (schedule.id === selectedSchedule.id) setSelectedScheduleId(remaining[0].id);
       setIsScheduleMenuOpen(false);
@@ -335,7 +363,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                 }).filter((entry): entry is TimetableEntry => entry !== null);
 
                 if (newEntries.length > 0) {
-                     setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                     setSchedules(prev => (Array.isArray(prev) ? prev : safeSchedules).map(schedule => schedule.id === selectedSchedule.id
                          ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
                          : schedule));
                 }
@@ -369,7 +397,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                     ))
                     .filter((entry): entry is TimetableEntry => entry !== null);
                 if (newEntries.length > 0) {
-                    setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                    setSchedules(prev => (Array.isArray(prev) ? prev : safeSchedules).map(schedule => schedule.id === selectedSchedule.id
                         ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
                         : schedule));
                 }
@@ -396,7 +424,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
                         `json-${Date.now()}-${idx}`
                     ))
                     .filter((entry): entry is TimetableEntry => entry !== null);
-                setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+                setSchedules(prev => (Array.isArray(prev) ? prev : safeSchedules).map(schedule => schedule.id === selectedSchedule.id
                     ? { ...schedule, entries: importedEntries }
                     : schedule));
             }
@@ -412,7 +440,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
         }).filter((entry): entry is TimetableEntry => entry !== null);
         
         if (newEntries.length > 0) {
-            setSchedules(prev => prev.map(schedule => schedule.id === selectedSchedule.id
+            setSchedules(prev => (Array.isArray(prev) ? prev : safeSchedules).map(schedule => schedule.id === selectedSchedule.id
                 ? { ...schedule, entries: [...schedule.entries, ...newEntries] }
                 : schedule));
         }
@@ -520,7 +548,7 @@ export const TimetableView: React.FC<TimetableViewProps> = ({
           </button>
           {isScheduleMenuOpen && (
               <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900">
-                  {schedules.map(schedule => (
+                  {safeSchedules.map(schedule => (
                       <div key={schedule.id} className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-800">
                           <button
                               onClick={() => { setSelectedScheduleId(schedule.id); setIsScheduleMenuOpen(false); }}
